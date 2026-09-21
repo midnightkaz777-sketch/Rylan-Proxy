@@ -1,11 +1,22 @@
 const express = require('express');
 const proxy = require('express-http-proxy');
+const rateLimit = require('express-rate-limit');
 const url = require('url');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve the frontend HTML interface on the root path
+// 1. Rate Limiter: Protects against abuse (max 100 requests per 15 min per IP)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: 'Too many requests from this IP, please try again later.'
+});
+
+// Apply rate limiting specifically to the proxy endpoint
+app.use('/proxy', limiter);
+
+// 2. Serve the Web Interface on the Root Path
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -70,12 +81,12 @@ app.get('/', (req, res) => {
         <body>
             <div class="container">
                 <h1>Web Proxy Portal</h1>
-                <p>Enter a web address below to view it through the local proxy server.</p>
+                <p>Enter a web address below to view it through your proxy server.</p>
                 <div class="input-group">
-                    <input type="text" id="targetUrl" placeholder="https://example.com">
+                    <input type="text" id="targetUrl" placeholder="https://jsonplaceholder.typicode.com/todos/1">
                     <button onclick="navigate()">Go</button>
                 </div>
-                <p class="note">Example: https://jsonplaceholder.typicode.com/posts/1</p>
+                <p class="note">Example: https://httpbin.org/get</p>
             </div>
 
             <script>
@@ -83,16 +94,13 @@ app.get('/', (req, res) => {
                     let input = document.getElementById('targetUrl').value.trim();
                     if (!input) return;
 
-                    // Automatically append http:// if missing
                     if (!/^https?:\/\//i.test(input)) {
                         input = 'http://' + input;
                     }
 
-                    // Route through our dynamic proxy endpoint
                     window.location.href = '/proxy?url=' + encodeURIComponent(input);
                 }
 
-                // Allow hitting Enter to submit
                 document.getElementById('targetUrl').addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') navigate();
                 });
@@ -102,7 +110,19 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Dynamic proxy middleware handling incoming requests
+// Helper function to block requests to local/internal network locations
+function isLocalAddress(hostname) {
+    return (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === '0.0.0.0' ||
+        hostname.startsWith('192.168.') ||
+        hostname.startsWith('10.') ||
+        hostname === '169.254.169.254'
+    );
+}
+
+// 3. Dynamic Proxy Handler
 app.use('/proxy', (req, res, next) => {
     const targetUrl = req.query.url;
 
@@ -112,24 +132,30 @@ app.use('/proxy', (req, res, next) => {
 
     try {
         const parsedUrl = new url.URL(targetUrl);
+
+        // Security check: Block attempts to target local/internal networks
+        if (isLocalAddress(parsedUrl.hostname)) {
+            return res.status(403).send('Access to local/internal network resources is forbidden.');
+        }
+
         const host = `${parsedUrl.protocol}//${parsedUrl.host}`;
 
-        // Forward request dynamically to the destination host
         return proxy(host, {
             proxyReqPathResolver: () => parsedUrl.pathname + parsedUrl.search,
             userResHeaderDecorator(headers) {
-                // Remove restrictive frame headers so content displays properly
+                // Strip restrictive iframe headers to allow loading embeddable pages
                 delete headers['x-frame-options'];
                 delete headers['content-security-policy'];
                 return headers;
             }
         })(req, res, next);
+
     } catch (err) {
         return res.status(400).send('Invalid URL provided.');
     }
 });
 
-// Start listening
+// 4. Start Server
 app.listen(PORT, () => {
-    console.log(`Proxy server running locally at http://localhost:${PORT}`);
+    console.log(`Proxy server running at http://localhost:${PORT}`);
 });
