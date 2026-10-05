@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Control Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            900: '#083344',
+                        },
+                        dark: {
+                            900: '#0a0d14',
+                            800: '#121824',
+                            700: '#1a2333',
+                            600: '#26334d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['Orbitron', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #06090e;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(18, 24, 36, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(26, 35, 51, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+        }
+
+        .glow-red {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+        }
+
+        .glow-green {
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 13, 20, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26334d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        /* Radar & Grid background */
+        .bg-grid {
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        .strobe-preview {
+            transition: background-color 0.05s ease;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden bg-grid">
+
+    <aside class="w-full md:w-64 glass-panel flex flex-col justify-between z-20 shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
+        <div>
+            <!-- Header Logo -->
+            <div class="p-5 flex items-center justify-between border-b border-slate-800/60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 glow-cyan">
+                        <i class="fa-solid fa-robot text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-lg text-white tracking-wider">AURA-X1</h1>
+                        <span class="text-xs font-mono text-cyan-400/80">CORE COMMAND</span>
+                    </div>
+                </div>
+                <div id="statusDot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="System Online"></div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1">
+                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
+                    <i class="fa-solid fa-gauge-high w-5"></i> Dashboard
+                </button>
+                <button onclick="switchTab('lighting')" id="tab-lighting" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
+                    <i class="fa-solid fa-lightbulb w-5"></i> Light Strobe
+                </button>
+                <button onclick="switchTab('audio')" id="tab-audio" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
+                    <i class="fa-solid fa-volume-high w-5"></i> Audio Speaker
+                </button>
+                <button onclick="switchTab('tracking')" id="tab-tracking" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
+                    <i class="fa-solid fa-crosshairs w-5"></i> Absolute Tracking
+                </button>
+            </nav>
+        </div>
+
+        <!-- Connection & Hardware Status Widget -->
+        <div class="p-4 border-t border-slate-800/60 space-y-3">
+            <div class="glass-card p-3 rounded-xl space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Connection Mode</span>
+                    <span id="connTypeLabel" class="font-mono text-cyan-400">BLE / WEBSOCKET</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-300 font-mono" id="connStatusText">Connected (12ms)</span>
+                    <button id="toggleConnBtn" onclick="toggleConnection()" class="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all">
+                        ONLINE
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-card p-3 rounded-xl space-y-1">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>Hardware Battery</span>
+                    <span id="batteryVal" class="font-mono text-emerald-400">88%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="batteryBar" class="h-full bg-emerald-500 w-[88%] transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-y-auto">
+        <!-- Top Status Bar -->
+        <header class="glass-panel px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 z-10 sticky top-0">
+            <div class="flex items-center gap-4">
+                <h2 id="pageTitle" class="font-display text-xl font-bold text-white tracking-wide">SYSTEM OVERVIEW</h2>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                    ID: DEV-9984-X
+                </span>
+            </div>
+
+            <!-- Header Quick Telemetry -->
+            <div class="flex items-center gap-6 text-xs font-mono">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-temperature-half text-amber-400"></i>
+                    <span class="text-slate-400">TEMP:</span>
+                    <span id="tempVal" class="text-white">34.2°C</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-cyan-400"></i>
+                    <span class="text-slate-400">POWER:</span>
+                    <span id="powerVal" class="text-white">14.8 W</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-wifi text-indigo-400"></i>
+                    <span class="text-slate-400">RSSI:</span>
+                    <span id="rssiVal" class="text-white">-62 dBm</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Sections -->
+        <div class="p-6 space-y-6 flex-1">
+
+            <!-- SECTION: OVERVIEW / DASHBOARD COMBINED -->
+            <div id="section-overview" class="tab-content space-y-6">
+                <!-- Top Quick Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-mono">Strobe Status</p>
+                            <p id="dashStrobeStatus" class="text-lg font-bold font-display text-emerald-400">IDLE</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                            <i class="fa-solid fa-lightbulb text-lg"></i>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-mono">Speaker Synthesizer</p>
+                            <p id="dashAudioStatus" class="text-lg font-bold font-display text-slate-400">OFF</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                            <i class="fa-solid fa-volume-high text-lg"></i>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-mono">Absolute Coordinates</p>
+                            <p id="dashCoords" class="text-sm font-bold font-mono text-cyan-400">X: 250, Y: 200</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                            <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                        </div>
+                    </div>
+
+                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-mono">Heading / Orientation</p>
+                            <p id="dashHeading" class="text-lg font-bold font-display text-white">045° NE</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+                            <i class="fa-solid fa-compass text-lg"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Panel Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Light Quick Controls -->
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-display font-semibold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-amber-400"></i> Strobe Light Quick Control
+                            </h3>
+                            <button onclick="switchTab('lighting')" class="text-xs text-cyan-400 hover:underline">Full Lighting Setup &rarr;</button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="triggerPattern('beacon')" class="p-3 glass-card rounded-xl border hover:border-amber-500/50 text-left transition-all group">
+                                <p class="text-xs text-slate-400">Preset Strobe</p>
+                                <p class="font-bold text-amber-300 group-hover:text-white">Emergency Strobe</p>
+                            </button>
+                            <button onclick="triggerPattern('sos')" class="p-3 glass-card rounded-xl border hover:border-red-500/50 text-left transition-all group">
+                                <p class="text-xs text-slate-400">Preset Strobe</p>
+                                <p class="font-bold text-red-400 group-hover:text-white">S.O.S Pattern</p>
+                            </button>
+                            <button onclick="triggerPattern('police')" class="p-3 glass-card rounded-xl border hover:border-blue-500/50 text-left transition-all group">
+                                <p class="text-xs text-slate-400">Preset Strobe</p>
+                                <p class="font-bold text-blue-400 group-hover:text-white">Police Red/Blue</p>
+                            </button>
+                            <button onclick="stopStrobe()" class="p-3 glass-card rounded-xl border hover:border-slate-500 text-left transition-all group">
+                                <p class="text-xs text-slate-400">Action</p>
+                                <p class="font-bold text-slate-300 group-hover:text-white">Kill Lights</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Speaker Quick Controls -->
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="font-display font-semibold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bullhorn text-indigo-400"></i> Speaker Sound Generator
+                            </h3>
+                            <button onclick="switchTab('audio')" class="text-xs text-cyan-400 hover:underline">Full Synthesizer &rarr;</button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="playPresetTone('beep')" class="p-3 glass-card rounded-xl text-center hover:border-indigo-500/50 transition-all">
+                                <i class="fa-solid fa-bell text-indigo-400 mb-1 text-lg"></i>
+                                <p class="text-xs font-semibold">Ping Beep</p>
+                            </button>
+                            <button onclick="playPresetTone('siren')" class="p-3 glass-card rounded-xl text-center hover:border-rose-500/50 transition-all">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-400 mb-1 text-lg"></i>
+                                <p class="text-xs font-semibold">Siren Wave</p>
+                            </button>
+                            <button onclick="playPresetTone('alarm')" class="p-3 glass-card rounded-xl text-center hover:border-amber-500/50 transition-all">
+                                <i class="fa-solid fa-circle-exclamation text-amber-400 mb-1 text-lg"></i>
+                                <p class="text-xs font-semibold">Alarm Duty</p>
+                            </button>
+                        </div>
+
+                        <button onclick="stopAudio()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300 transition-all border border-slate-700">
+                            MUTE ALL AUDIO OUTPUT
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-lighting" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Controls Sidebar -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
+                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <span>Strobe Settings</span>
+                            <i class="fa-solid fa-sliders text-amber-400"></i>
+                        </h3>
+
+                        <!-- Frequency / Blink Rate Slider -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <label class="text-slate-300 font-medium">Blink Frequency</label>
+                                <span id="freqLabel" class="font-mono text-amber-400 font-bold">10 Hz</span>
+                            </div>
+                            <input type="range" id="strobeFreq" min="1" max="30" value="10" class="w-full accent-amber-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateStrobeParams()">
+                            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                                <span>1 Hz (Slow)</span>
+                                <span>30 Hz (Hyper)</span>
+                            </div>
+                        </div>
+
+                        <!-- Color Selection -->
+                        <div class="space-y-2">
+                            <label class="text-slate-300 text-sm font-medium">Primary Strobe Color</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" id="strobeColor" value="#f59e0b" class="w-12 h-10 bg-slate-800 rounded border border-slate-700 cursor-pointer p-1" onchange="updateStrobeParams()">
+                                <div class="flex gap-2">
+                                    <button onclick="setColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border border-white/20"></button>
+                                    <button onclick="setColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border border-white/20"></button>
+                                    <button onclick="setColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border border-white/20"></button>
+                                    <button onclick="setColor('#f59e0b')" class="w-8 h-8 rounded-full bg-amber-500 border border-white/20"></button>
+                                    <button onclick="setColor('#ffffff')" class="w-8 h-8 rounded-full bg-white border border-white/20"></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pattern Selection -->
+                        <div class="space-y-2">
+                            <label class="text-slate-300 text-sm font-medium">Preset Strobe Patterns</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="triggerPattern('beacon')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Standard Blink</button>
+                                <button onclick="triggerPattern('sos')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">SOS Emergency</button>
+                                <button onclick="triggerPattern('police')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Police Strobe</button>
+                                <button onclick="triggerPattern('pulse')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Soft Glow Pulse</button>
+                            </div>
+                        </div>
+
+                        <!-- Power Toggle -->
+                        <div class="pt-4 border-t border-slate-800 flex gap-3">
+                            <button id="strobeToggleBtn" onclick="toggleStrobe()" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold font-display transition-all shadow-lg shadow-amber-500/20">
+                                START LIGHT
+                            </button>
+                            <button onclick="stopStrobe()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">
+                                OFF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Visual Hardware Light Simulator -->
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between items-center relative overflow-hidden min-h-[350px]">
+                        <div class="w-full flex justify-between items-center text-xs font-mono text-slate-400">
+                            <span>HARDWARE OPTICAL LIGHT BAY</span>
+                            <span id="lightPatternLabel">PATTERN: CUSTOM</span>
+                        </div>
+
+                        <!-- Animated Light Lamp Fixture Visual -->
+                        <div class="relative my-8 flex items-center justify-center">
+                            <!-- Outer Ambient Glow Ring -->
+                            <div id="ambientLightGlow" class="absolute w-64 h-64 rounded-full blur-3xl opacity-20 transition-all duration-75" style="background-color: #f59e0b;"></div>
+                            
+                            <!-- Strobe Lamp Bulb Fixture -->
+                            <div id="strobeBulb" class="strobe-preview relative w-40 h-40 rounded-full border-4 border-slate-700 flex items-center justify-center bg-slate-900 shadow-2xl z-10">
+                                <div class="w-24 h-24 rounded-full border-2 border-white/20 flex items-center justify-center bg-slate-800">
+                                    <i class="fa-solid fa-lightbulb text-5xl text-slate-600 transition-colors" id="bulbIcon"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full glass-card p-4 rounded-xl flex items-center justify-between text-xs font-mono">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                                <span class="text-slate-300">STABILITY STATUS: NOMINAL</span>
+                            </div>
+                            <span class="text-slate-400" id="dutyCycleLabel">DUTY CYCLE: 50%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-audio" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Synthesizer Controls -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
+                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <span>Sound Generator</span>
+                            <i class="fa-solid fa-wave-square text-indigo-400"></i>
+                        </h3>
+
+                        <!-- Frequency Slider -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <label class="text-slate-300 font-medium">Frequency Pitch</label>
+                                <span id="audioFreqLabel" class="font-mono text-indigo-400 font-bold">440 Hz</span>
+                            </div>
+                            <input type="range" id="audioFreq" min="100" max="3000" value="440" class="w-full accent-indigo-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateAudioParams()">
+                        </div>
+
+                        <!-- Waveform Type -->
+                        <div class="space-y-2">
+                            <label class="text-slate-300 text-sm font-medium">Waveform Oscillator</label>
+                            <select id="waveType" onchange="updateAudioParams()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="sine">Sine Wave (Smooth)</option>
+                                <option value="square">Square Wave (Retro Digital)</option>
+                                <option value="sawtooth">Sawtooth Wave (Aggressive)</option>
+                                <option value="triangle">Triangle Wave (Mellow)</option>
+                            </select>
+                        </div>
+
+                        <!-- Volume Control -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-sm">
+                                <label class="text-slate-300 font-medium">Output Volume</label>
+                                <span id="volumeLabel" class="font-mono text-indigo-400 font-bold">70%</span>
+                            </div>
+                            <input type="range" id="audioVolume" min="0" max="100" value="70" class="w-full accent-indigo-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateAudioParams()">
+                        </div>
+
+                        <!-- Sound Presets -->
+                        <div class="space-y-2">
+                            <label class="text-slate-300 text-sm font-medium">Sound Effects / Siren Presets</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="playPresetTone('beep')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Ping Tone</button>
+                                <button onclick="playPresetTone('siren')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Police Siren</button>
+                                <button onclick="playPresetTone('alarm')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Warning Alarm</button>
+                                <button onclick="playPresetTone('ambient')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Ambient Hum</button>
+                            </div>
+                        </div>
+
+                        <!-- Trigger Button -->
+                        <div class="pt-4 border-t border-slate-800 flex gap-3">
+                            <button id="audioToggleBtn" onclick="toggleAudioTone()" class="flex-1 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold font-display transition-all shadow-lg shadow-indigo-500/20">
+                                PLAY TONE
+                            </button>
+                            <button onclick="stopAudio()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">
+                                STOP
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Audio Visualizer Display -->
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[350px]">
+                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-4">
+                            <span>WEB AUDIO REAL-TIME OSCILLOSCOPE</span>
+                            <span id="audioStatusBadge" class="text-indigo-400">STATUS: IDLE</span>
+                        </div>
+
+                        <!-- Audio Visualizer Canvas -->
+                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                            <canvas id="audioCanvas" class="w-full h-full absolute inset-0"></canvas>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-3 gap-4 text-center text-xs font-mono">
+                            <div class="glass-card p-3 rounded-xl">
+                                <p class="text-slate-400">ACTIVE FREQ</p>
+                                <p id="vizFreq" class="text-indigo-400 font-bold text-sm">0 Hz</p>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl">
+                                <p class="text-slate-400">AMPLITUDE</p>
+                                <p id="vizAmp" class="text-indigo-400 font-bold text-sm">0 dB</p>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl">
+                                <p class="text-slate-400">WAVEFORM</p>
+                                <p id="vizWave" class="text-indigo-400 font-bold text-sm">SINE</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-tracking" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Map Controls & Coordinates -->
+                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
+                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
+                            <span>Position & Telemetry</span>
+                            <i class="fa-solid fa-location-crosshairs text-cyan-400"></i>
+                        </h3>
+
+                        <!-- Telemetry Display Cards -->
+                        <div class="grid grid-cols-2 gap-3 font-mono text-xs">
+                            <div class="glass-card p-3 rounded-xl">
+                                <span class="text-slate-400">Abs X Pos</span>
+                                <p id="trackX" class="text-cyan-400 font-bold text-base">250.0 m</p>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl">
+                                <span class="text-slate-400">Abs Y Pos</span>
+                                <p id="trackY" class="text-cyan-400 font-bold text-base">200.0 m</p>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl">
+                                <span class="text-slate-400">Heading Angle</span>
+                                <p id="trackHeading" class="text-amber-400 font-bold text-base">045°</p>
+                            </div>
+                            <div class="glass-card p-3 rounded-xl">
+                                <span class="text-slate-400">Speed</span>
+                                <p id="trackSpeed" class="text-emerald-400 font-bold text-base">1.4 m/s</p>
+                            </div>
+                        </div>
+
+                        <!-- Manual Coordinate Overrides -->
+                        <div class="space-y-3 pt-2">
+                            <label class="text-slate-300 text-sm font-medium">Manual Coordinate Dispatch</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" id="manualX" placeholder="Target X" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs font-mono text-white">
+                                <input type="number" id="manualY" placeholder="Target Y" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs font-mono text-white">
+                            </div>
+                            <button onclick="setManualPosition()" class="w-full py-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-xs font-bold transition-all">
+                                SET ABSOLUTE POSITION
+                            </button>
+                        </div>
+
+                        <!-- Tracking Modes Toggles -->
+                        <div class="space-y-3 pt-2 border-t border-slate-800">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-300">Live Simulation Walk</span>
+                                <input type="checkbox" id="simWalkToggle" checked onchange="toggleSimulatedWalk()" class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-300">Show Trail History</span>
+                                <input type="checkbox" id="showTrailToggle" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-300">Display Grid Markers</span>
+                                <input type="checkbox" id="showGridToggle" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
+                            </div>
+                        </div>
+
+                        <button onclick="clearWaypoints()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-mono transition-all">
+                            CLEAR WAYPOINTS & TRAIL
+                        </button>
+                    </div>
+
+                    <!-- 2D Interactive Tracking Map Canvas -->
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[450px]">
+                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-3">
+                            <span>ABSOLUTE 2D COORDINATE MAP (CLICK TO SET WAYPOINT)</span>
+                            <span class="text-cyan-400"><i class="fa-solid fa-satellite animate-pulse"></i> GPS FIX: HIGH</span>
+                        </div>
+
+                        <!-- Canvas Map Container -->
+                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                            <canvas id="mapCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+                            <!-- Compass Overlay -->
+                            <div class="absolute top-4 right-4 w-14 h-14 rounded-full glass-card border border-slate-700/60 flex items-center justify-center">
+                                <div id="compassNeedle" class="text-rose-500 font-bold transition-transform duration-300">
+                                    <i class="fa-solid fa-location-arrow text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coordinates Footer -->
+                        <div class="mt-3 flex justify-between items-center text-xs font-mono text-slate-400">
+                            <span>MAP BOUNDS: 500m x 400m</span>
+                            <span id="mouseCoords">CURSOR: X: 0, Y: 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-2xl space-y-2">
+                <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                    <span class="font-mono text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-cyan-400"></i> SYSTEM ACTIVITY LOG
+                    </span>
+                    <button onclick="clearLogs()" class="text-[10px] text-slate-500 hover:text-slate-300">Clear Log</button>
+                </div>
+                <div id="consoleLog" class="h-28 overflow-y-auto font-mono text-xs space-y-1 text-slate-300 pr-2">
+                    <div class="text-slate-500">[00:00:00] Hardware System Core Initialized.</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        let state = {
+            connected: true,
+            strobe: {
+                active: false,
+                freq: 10,
+                color: '#f59e0b',
+                pattern: 'custom',
+                timer: null
+            },
+            audio: {
+                active: false,
+                ctx: null,
+                osc: null,
+                gain: null,
+                freq: 440,
+                wave: 'sine',
+                vol: 0.7,
+                analyser: null
+            },
+            tracking: {
+                x: 250,
+                y: 200,
+                heading: 45,
+                speed: 1.4,
+                trail: [],
+                waypoints: [],
+                simWalk: true
+            }
+        };
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeContent = document.getElementById(`section-${tabId}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if (activeTab) {
+                activeTab.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
+                activeTab.classList.remove('text-slate-400');
+            }
+
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) {
+                pageTitle.innerText = tabId === 'overview' ? 'SYSTEM OVERVIEW' : 
+                                      tabId === 'lighting' ? 'LIGHTING & STROBE CONTROL' : 
+                                      tabId === 'audio' ? 'SPEAKER AUDIO SYNTHESIZER' : 'ABSOLUTE TRACKING MAP';
+            }
+        }
+
+        function logMessage(msg, type = 'info') {
+            const consoleLog = document.getElementById('consoleLog');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            
+            let color = 'text-slate-300';
+            if (type === 'warn') color = 'text-amber-400';
+            if (type === 'error') color = 'text-rose-400';
+            if (type === 'success') color = 'text-emerald-400';
+
+            logEntry.className = color;
+            logEntry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
+            consoleLog.appendChild(logEntry);
+            consoleLog.scrollTop = consoleLog.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('consoleLog').innerHTML = '';
+        }
+
+        function toggleConnection() {
+            state.connected = !state.connected;
+            const btn = document.getElementById('toggleConnBtn');
+            const statusText = document.getElementById('connStatusText');
+            const statusDot = document.getElementById('statusDot');
+
+            if (state.connected) {
+                btn.className = "px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all";
+                btn.innerText = "ONLINE";
+                statusText.innerText = "Connected (12ms)";
+                statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+                logMessage("Reconnected to hardware node via WebSocket/BLE.", "success");
+            } else {
+                btn.className = "px-2 py-1 text-xs rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-all";
+                btn.innerText = "OFFLINE";
+                statusText.innerText = "Disconnected";
+                statusDot.className = "w-3 h-3 rounded-full bg-rose-500";
+                logMessage("Hardware connection lost / Disconnected manually.", "error");
+            }
+        }
+
+        let strobeStateOn = false;
+
+        function updateStrobeParams() {
+            state.strobe.freq = parseInt(document.getElementById('strobeFreq').value);
+            state.strobe.color = document.getElementById('strobeColor').value;
+            document.getElementById('freqLabel').innerText = state.strobe.freq + ' Hz';
+            
+            // Update glow color preview immediately
+            document.getElementById('ambientLightGlow').style.backgroundColor = state.strobe.color;
+        }
+
+        function setColor(hex) {
+            document.getElementById('strobeColor').value = hex;
+            updateStrobeParams();
+        }
+
+        function toggleStrobe() {
+            if (state.strobe.active) {
+                stopStrobe();
+            } else {
+                startStrobe();
+            }
+        }
+
+        function startStrobe() {
+            stopStrobe(); // Clear existing timers
+            state.strobe.active = true;
+            document.getElementById('strobeToggleBtn').innerText = "STOP LIGHT";
+            document.getElementById('dashStrobeStatus').innerText = "ACTIVE (" + state.strobe.freq + "Hz)";
+            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-amber-400 animate-pulse";
+            
+            logMessage(`Strobe light started at ${state.strobe.freq} Hz`, "warn");
+
+            const intervalMs = 1000 / (state.strobe.freq * 2);
+            state.strobe.timer = setInterval(() => {
+                strobeStateOn = !strobeStateOn;
+                const bulb = document.getElementById('strobeBulb');
+                const icon = document.getElementById('bulbIcon');
+                const glow = document.getElementById('ambientLightGlow');
+
+                if (strobeStateOn) {
+                    bulb.style.backgroundColor = state.strobe.color;
+                    bulb.style.boxShadow = `0 0 30px ${state.strobe.color}`;
+                    icon.style.color = '#ffffff';
+                    glow.style.opacity = '0.8';
+                } else {
+                    bulb.style.backgroundColor = '#0f172a';
+                    bulb.style.boxShadow = 'none';
+                    icon.style.color = '#475569';
+                    glow.style.opacity = '0.05';
+                }
+            }, intervalMs);
+        }
+
+        function stopStrobe() {
+            state.strobe.active = false;
+            if (state.strobe.timer) clearInterval(state.strobe.timer);
+            
+            const bulb = document.getElementById('strobeBulb');
+            const icon = document.getElementById('bulbIcon');
+            const glow = document.getElementById('ambientLightGlow');
+
+            if (bulb) {
+                bulb.style.backgroundColor = '#0f172a';
+                bulb.style.boxShadow = 'none';
+                icon.style.color = '#475569';
+                glow.style.opacity = '0.05';
+            }
+
+            document.getElementById('strobeToggleBtn').innerText = "START LIGHT";
+            document.getElementById('dashStrobeStatus').innerText = "IDLE";
+            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-emerald-400";
+            logMessage("Strobe light deactivated.", "info");
+        }
+
+        function triggerPattern(pattern) {
+            state.strobe.pattern = pattern;
+            document.getElementById('lightPatternLabel').innerText = "PATTERN: " + pattern.toUpperCase();
+
+            if (pattern === 'sos') {
+                setColor('#ef4444');
+                document.getElementById('strobeFreq').value = 5;
+            } else if (pattern === 'police') {
+                setColor('#3b82f6');
+                document.getElementById('strobeFreq').value = 14;
+            } else if (pattern === 'beacon') {
+                setColor('#f59e0b');
+                document.getElementById('strobeFreq').value = 2;
+            } else if (pattern === 'pulse') {
+                setColor('#22c55e');
+                document.getElementById('strobeFreq').value = 4;
+            }
+            
+            updateStrobeParams();
+            startStrobe();
+        }
+
+        function initAudioContext() {
+            if (!state.audio.ctx) {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                state.audio.ctx = new AudioCtx();
+                state.audio.analyser = state.audio.ctx.createAnalyser();
+                state.audio.analyser.fftSize = 128;
+            }
+        }
+
+        function updateAudioParams() {
+            state.audio.freq = parseInt(document.getElementById('audioFreq').value);
+            state.audio.vol = parseInt(document.getElementById('audioVolume').value) / 100;
+            state.audio.wave = document.getElementById('waveType').value;
+
+            document.getElementById('audioFreqLabel').innerText = state.audio.freq + ' Hz';
+            document.getElementById('volumeLabel').innerText = Math.round(state.audio.vol * 100) + '%';
+
+            if (state.audio.osc) {
+                state.audio.osc.frequency.setValueAtTime(state.audio.freq, state.audio.ctx.currentTime);
+                state.audio.osc.type = state.audio.wave;
+            }
+            if (state.audio.gain) {
+                state.audio.gain.gain.setValueAtTime(state.audio.vol, state.audio.ctx.currentTime);
+            }
+
+            document.getElementById('vizFreq').innerText = state.audio.freq + ' Hz';
+            document.getElementById('vizWave').innerText = state.audio.wave.toUpperCase();
+            document.getElementById('vizAmp').innerText = Math.round(state.audio.vol * 100) + ' dB';
+        }
+
+        function toggleAudioTone() {
+            if (state.audio.active) {
+                stopAudio();
+            } else {
+                startAudioTone();
+            }
+        }
+
+        function startAudioTone() {
+            initAudioContext();
+            if (state.audio.ctx.state === 'suspended') {
+                state.audio.ctx.resume();
+            }
+
+            stopAudio(); // Reset any existing oscillators
+
+            state.audio.osc = state.audio.ctx.createOscillator();
+            state.audio.gain = state.audio.ctx.createGain();
+
+            updateAudioParams();
+
+            state.audio.osc.connect(state.audio.gain);
+            state.audio.gain.connect(state.audio.analyser);
+            state.audio.analyser.connect(state.audio.ctx.destination);
+
+            state.audio.osc.start();
+            state.audio.active = true;
+
+            document.getElementById('audioToggleBtn').innerText = "STOP AUDIO";
+            document.getElementById('audioStatusBadge').innerText = "STATUS: TRANSMITTING";
+            document.getElementById('dashAudioStatus').innerText = "PLAYING";
+            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-indigo-400 animate-pulse";
+
+            logMessage(`Audio Tone generator active (${state.audio.freq} Hz - ${state.audio.wave})`, "info");
+            drawOscilloscope();
+        }
+
+        function stopAudio() {
+            if (state.audio.osc) {
+                try {
+                    state.audio.osc.stop();
+                    state.audio.osc.disconnect();
+                } catch (e) {}
+                state.audio.osc = null;
+            }
+            state.audio.active = false;
+
+            document.getElementById('audioToggleBtn').innerText = "PLAY TONE";
+            document.getElementById('audioStatusBadge').innerText = "STATUS: IDLE";
+            document.getElementById('dashAudioStatus').innerText = "OFF";
+            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-slate-400";
+            
+            document.getElementById('vizFreq').innerText = '0 Hz';
+            document.getElementById('vizAmp').innerText = '0 dB';
+        }
+
+        function playPresetTone(type) {
+            initAudioContext();
+            
+            if (type === 'beep') {
+                document.getElementById('audioFreq').value = 1200;
+                document.getElementById('waveType').value = 'sine';
+                startAudioTone();
+                setTimeout(stopAudio, 250);
+            } else if (type === 'siren') {
+                document.getElementById('audioFreq').value = 800;
+                document.getElementById('waveType').value = 'sawtooth';
+                startAudioTone();
+                let direction = 1;
+                let currentF = 800;
+                let sirenInterval = setInterval(() => {
+                    if (!state.audio.active) { clearInterval(sirenInterval); return; }
+                    currentF += 40 * direction;
+                    if (currentF > 1600 || currentF < 600) direction *= -1;
+                    document.getElementById('audioFreq').value = currentF;
+                    updateAudioParams();
+                }, 50);
+            } else if (type === 'alarm') {
+                document.getElementById('audioFreq').value = 2000;
+                document.getElementById('waveType').value = 'square';
+                startAudioTone();
+            } else if (type === 'ambient') {
+                document.getElementById('audioFreq').value = 150;
+                document.getElementById('waveType').value = 'triangle';
+                startAudioTone();
+            }
+        }
+
+        function drawOscilloscope() {
+            const canvas = document.getElementById('audioCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+
+            if (!state.audio.active || !state.audio.analyser) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            requestAnimationFrame(drawOscilloscope);
+
+            const bufferLength = state.audio.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            state.audio.analyser.getByteTimeDomainData(dataArray);
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#818cf8';
+            ctx.beginPath();
+
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * canvas.height / 2;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+        }
+
+        function initTrackingMap() {
+            const canvas = document.getElementById('mapCanvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth;
+                canvas.height = canvas.parentElement.clientHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Handle user click to set target waypoint
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                // Scale canvas pixel coordinates to meter world coordinate bounds
+                const worldX = Math.round((clickX / canvas.width) * 500);
+                const worldY = Math.round((clickY / canvas.height) * 400);
+
+                state.tracking.waypoints.push({ x: clickX, y: clickY, worldX, worldY });
+                logMessage(`New Waypoint Target Added at X: ${worldX}m, Y: ${worldY}m`, "success");
+            });
+
+            // Hover Mouse Coordinates
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = Math.round(((e.clientX - rect.left) / canvas.width) * 500);
+                const mouseY = Math.round(((e.clientY - rect.top) / canvas.height) * 400);
+                document.getElementById('mouseCoords').innerText = `CURSOR: X: ${mouseX}m, Y: ${mouseY}m`;
+            });
+
+            // Main Map Rendering Loop
+            function renderMap() {
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const showGrid = document.getElementById('showGridToggle').checked;
+                const showTrail = document.getElementById('showTrailToggle').checked;
+
+                // Draw Grid Lines
+                if (showGrid) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1;
+                    const gridSize = 40;
+                    for (let x = 0; x < canvas.width; x += gridSize) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, canvas.height);
+                        ctx.stroke();
+                    }
+                    for (let y = 0; y < canvas.height; y += gridSize) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(canvas.width, y);
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw Waypoints
+                state.tracking.waypoints.forEach((wp, idx) => {
+                    ctx.strokeStyle = '#06b6d4';
+                    ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(wp.x, wp.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '10px JetBrains Mono';
+                    ctx.fillText(`WP${idx + 1}`, wp.x + 12, wp.y + 4);
+                });
+
+                // Draw Path Trail
+                if (showTrail && state.tracking.trail.length > 1) {
+                    ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    state.tracking.trail.forEach((pt, i) => {
+                        if (i === 0) ctx.moveTo(pt.x, pt.y);
+                        else ctx.lineTo(pt.x, pt.y);
+                    });
+                    ctx.stroke();
+                }
+
+                // Convert World Pos back to Canvas pixels
+                const posX = (state.tracking.x / 500) * canvas.width;
+                const posY = (state.tracking.y / 400) * canvas.height;
+
+                // Draw Hardware Robot Marker Icon
+                ctx.save();
+                ctx.translate(posX, posY);
+                ctx.rotate((state.tracking.heading * Math.PI) / 180);
+
+                // Target Halo Pulsing
+                ctx.strokeStyle = '#22c55e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 16, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Robot Triangle Marker
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath();
+                ctx.moveTo(0, -12);
+                ctx.lineTo(10, 10);
+                ctx.lineTo(-10, 10);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.restore();
+
+                requestAnimationFrame(renderMap);
+            }
+
+            renderMap();
+        }
+
+        function startTelemetrySimulation() {
+            setInterval(() => {
+                if (!state.tracking.simWalk || !state.connected) return;
+
+                // Move towards waypoint if exists, else wander slightly
+                if (state.tracking.waypoints.length > 0) {
+                    const target = state.tracking.waypoints[0];
+                    const canvas = document.getElementById('mapCanvas');
+                    const targetPixelX = target.x;
+                    const targetPixelY = target.y;
+
+                    const currentPixelX = (state.tracking.x / 500) * canvas.width;
+                    const currentPixelY = (state.tracking.y / 400) * canvas.height;
+
+                    const dx = targetPixelX - currentPixelX;
+                    const dy = targetPixelY - currentPixelY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 10) {
+                        state.tracking.waypoints.shift(); // Reached waypoint
+                        logMessage("Arrived at Waypoint Target.", "success");
+                    } else {
+                        const angle = Math.atan2(dy, dx);
+                        state.tracking.heading = Math.round((angle * 180 / Math.PI + 90) % 360);
+                        state.tracking.x += Math.cos(angle) * 1.5;
+                        state.tracking.y += Math.sin(angle) * 1.5;
+                    }
+                } else {
+                    // Random small drift
+                    state.tracking.heading = (state.tracking.heading + (Math.random() * 6 - 3)) % 360;
+                    const rad = ((state.tracking.heading - 90) * Math.PI) / 180;
+                    state.tracking.x = Math.max(10, Math.min(490, state.tracking.x + Math.cos(rad) * 0.8));
+                    state.tracking.y = Math.max(10, Math.min(390, state.tracking.y + Math.sin(rad) * 0.8));
+                }
+
+                // Add to trail history
+                const canvas = document.getElementById('mapCanvas');
+                if (canvas) {
+                    const px = (state.tracking.x / 500) * canvas.width;
+                    const py = (state.tracking.y / 400) * canvas.height;
+                    state.tracking.trail.push({ x: px, y: py });
+                    if (state.tracking.trail.length > 150) state.tracking.trail.shift();
+                }
+
+                // Update UI Telemetry text
+                document.getElementById('trackX').innerText = state.tracking.x.toFixed(1) + ' m';
+                document.getElementById('trackY').innerText = state.tracking.y.toFixed(1) + ' m';
+                document.getElementById('trackHeading').innerText = Math.round(state.tracking.heading) + '°';
+                document.getElementById('dashCoords').innerText = `X: ${Math.round(state.tracking.x)}, Y: ${Math.round(state.tracking.y)}`;
+                document.getElementById('dashHeading').innerText = `${Math.round(state.tracking.heading).toString().padStart(3, '0')}°`;
+
+                // Rotate compass overlay
+                const compass = document.getElementById('compassNeedle');
+                if (compass) {
+                    compass.style.transform = `rotate(${state.tracking.heading}deg)`;
+                }
+
+            }, 100);
+        }
+
+        function setManualPosition() {
+            const x = parseFloat(document.getElementById('manualX').value);
+            const y = parseFloat(document.getElementById('manualY').value);
+
+            if (!isNaN(x) && !isNaN(y)) {
+                state.tracking.x = Math.max(0, Math.min(500, x));
+                state.tracking.y = Math.max(0, Math.min(400, y));
+                logMessage(`Manual Absolute Position Override set to X: ${x}, Y: ${y}`, "warn");
+            }
+        }
+
+        function toggleSimulatedWalk() {
+            state.tracking.simWalk = document.getElementById('simWalkToggle').checked;
+        }
+
+        function clearWaypoints() {
+            state.tracking.waypoints = [];
+            state.tracking.trail = [];
+            logMessage("Cleared waypoints and path trail history.", "info");
+        }
+
+        window.onload = function () {
+            initTrackingMap();
+            startTelemetrySimulation();
+            logMessage("Dashboard initialization complete. Live telemetry online.", "success");
+        };
+    </script>
+</body>
+</html>
