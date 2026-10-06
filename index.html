@@ -3,1002 +3,216 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardware Control Dashboard</title>
+    <title>AI Companion</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            500: '#06b6d4',
-                            600: '#0891b2',
-                            900: '#083344',
-                        },
-                        dark: {
-                            900: '#0a0d14',
-                            800: '#121824',
-                            700: '#1a2333',
-                            600: '#26334d',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
-                        display: ['Orbitron', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body {
-            background-color: #06090e;
+        .chat-bubble-user {
+            background-color: #2563eb;
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble-ai {
+            background-color: #1e293b;
             color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-
-        .glass-panel {
-            background: rgba(18, 24, 36, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .glass-card {
-            background: rgba(26, 35, 51, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .glow-cyan {
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
-        }
-
-        .glow-red {
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
-        }
-
-        .glow-green {
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.35);
-        }
-
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(10, 13, 20, 0.8);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #26334d;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #06b6d4;
-        }
-
-        /* Radar & Grid background */
-        .bg-grid {
-            background-size: 30px 30px;
-            background-image: 
-                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        }
-
-        .strobe-preview {
-            transition: background-color 0.05s ease;
+            border-bottom-left-radius: 4px;
         }
     </style>
 </head>
-<body class="h-screen flex flex-col md:flex-row overflow-hidden bg-grid">
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col justify-between">
 
-    <!-- Sidebar Navigation -->
-    <aside class="w-full md:w-64 glass-panel flex flex-col justify-between z-20 shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
+    <!-- Top Header -->
+    <header class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg">Nova</h1>
+                <p class="text-xs text-emerald-400"><i class="fa-solid fa-circle text-[8px]"></i> Online Companion</p>
+            </div>
+        </div>
+        
+        <!-- Settings Modal Trigger -->
+        <button onclick="toggleSettings()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800">
+            <i class="fa-solid fa-gear text-xl"></i>
+        </button>
+    </header>
+
+    <!-- Settings Drawer (Hidden by Default) -->
+    <div id="settingsDrawer" class="hidden bg-slate-900 border-b border-slate-800 p-4 space-y-3">
+        <h2 class="text-sm font-semibold text-slate-300">Companion Configuration</h2>
         <div>
-            <!-- Header Logo -->
-            <div class="p-5 flex items-center justify-between border-b border-slate-800/60">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 glow-cyan">
-                        <i class="fa-solid fa-robot text-xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="font-display font-bold text-lg text-white tracking-wider">AURA-X1</h1>
-                        <span class="text-xs font-mono text-cyan-400/80">CORE COMMAND</span>
-                    </div>
-                </div>
-                <div id="statusDot" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="System Online"></div>
-            </div>
-
-            <!-- Navigation Links -->
-            <nav class="p-4 space-y-1">
-                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
-                    <i class="fa-solid fa-gauge-high w-5"></i> Dashboard
-                </button>
-                <button onclick="switchTab('lighting')" id="tab-lighting" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
-                    <i class="fa-solid fa-lightbulb w-5"></i> Light Strobe
-                </button>
-                <button onclick="switchTab('audio')" id="tab-audio" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
-                    <i class="fa-solid fa-volume-high w-5"></i> Audio Speaker
-                </button>
-                <button onclick="switchTab('tracking')" id="tab-tracking" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-all">
-                    <i class="fa-solid fa-crosshairs w-5"></i> Absolute Tracking
-                </button>
-            </nav>
+            <label class="block text-xs text-slate-400 mb-1">OpenAI API Key (Saved in browser memory)</label>
+            <input type="password" id="apiKeyInput" placeholder="sk-..." class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500">
         </div>
-
-        <!-- Connection & Hardware Status Widget -->
-        <div class="p-4 border-t border-slate-800/60 space-y-3">
-            <div class="glass-card p-3 rounded-xl space-y-2">
-                <div class="flex items-center justify-between text-xs">
-                    <span class="text-slate-400">Connection Mode</span>
-                    <span id="connTypeLabel" class="font-mono text-cyan-400">BLE / WEBSOCKET</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs text-slate-300 font-mono" id="connStatusText">Connected (12ms)</span>
-                    <button id="toggleConnBtn" onclick="toggleConnection()" class="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all">
-                        ONLINE
-                    </button>
-                </div>
-            </div>
-
-            <div class="glass-card p-3 rounded-xl space-y-1">
-                <div class="flex justify-between text-xs text-slate-400">
-                    <span>Hardware Battery</span>
-                    <span id="batteryVal" class="font-mono text-emerald-400">88%</span>
-                </div>
-                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div id="batteryBar" class="h-full bg-emerald-500 w-[88%] transition-all duration-500"></div>
-                </div>
-            </div>
+        <div>
+            <label class="block text-xs text-slate-400 mb-1">System Personality / Prompt</label>
+            <textarea id="systemPromptInput" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500">You are Nova, an empathetic, helpful, and friendly AI companion. You reply concisely and warmly.</textarea>
         </div>
-    </aside>
+        <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded font-semibold">Save Settings</button>
+    </div>
 
-    <!-- Main Dynamic Content Region -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto">
-        <!-- Top Status Bar -->
-        <header class="glass-panel px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 z-10 sticky top-0">
-            <div class="flex items-center gap-4">
-                <h2 id="pageTitle" class="font-display text-xl font-bold text-white tracking-wide">SYSTEM OVERVIEW</h2>
-                <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-mono">
-                    ID: DEV-9984-X
-                </span>
+    <!-- Main Chat Window -->
+    <main id="chatWindow" class="flex-1 p-4 overflow-y-auto space-y-4">
+        <!-- AI Greeting -->
+        <div class="flex gap-3 max-w-xl">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs shrink-0">
+                <i class="fa-solid fa-robot"></i>
             </div>
-
-            <!-- Header Quick Telemetry -->
-            <div class="flex items-center gap-6 text-xs font-mono">
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-temperature-half text-amber-400"></i>
-                    <span class="text-slate-400">TEMP:</span>
-                    <span id="tempVal" class="text-white">34.2°C</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-bolt text-cyan-400"></i>
-                    <span class="text-slate-400">POWER:</span>
-                    <span id="powerVal" class="text-white">14.8 W</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-wifi text-indigo-400"></i>
-                    <span class="text-slate-400">RSSI:</span>
-                    <span id="rssiVal" class="text-white">-62 dBm</span>
-                </div>
+            <div class="chat-bubble-ai p-3.5 rounded-2xl text-sm">
+                Hi! I'm Nova, your AI companion. Open the gear icon above to add an API key and customize my personality, or start chatting below!
             </div>
-        </header>
-
-        <!-- Dynamic Content Sections -->
-        <div class="p-6 space-y-6 flex-1">
-
-            <!-- SECTION: OVERVIEW -->
-            <div id="section-overview" class="tab-content space-y-6">
-                <!-- Top Quick Stats -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-mono">Strobe Status</p>
-                            <p id="dashStrobeStatus" class="text-lg font-bold font-display text-emerald-400">IDLE</p>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                            <i class="fa-solid fa-lightbulb text-lg"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-mono">Speaker Synthesizer</p>
-                            <p id="dashAudioStatus" class="text-lg font-bold font-display text-slate-400">OFF</p>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-                            <i class="fa-solid fa-volume-high text-lg"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-mono">Absolute Coordinates</p>
-                            <p id="dashCoords" class="text-sm font-bold font-mono text-cyan-400">X: 250, Y: 200</p>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-                            <i class="fa-solid fa-location-crosshairs text-lg"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
-                        <div>
-                            <p class="text-xs text-slate-400 uppercase font-mono">Heading / Orientation</p>
-                            <p id="dashHeading" class="text-lg font-bold font-display text-white">045° NE</p>
-                        </div>
-                        <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
-                            <i class="fa-solid fa-compass text-lg"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Action Panel Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Light Quick Controls -->
-                    <div class="glass-panel p-5 rounded-2xl space-y-4">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <h3 class="font-display font-semibold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-bolt text-amber-400"></i> Strobe Light Quick Control
-                            </h3>
-                            <button onclick="switchTab('lighting')" class="text-xs text-cyan-400 hover:underline">Full Lighting Setup &rarr;</button>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="triggerPattern('beacon')" class="p-3 glass-card rounded-xl border hover:border-amber-500/50 text-left transition-all group">
-                                <p class="text-xs text-slate-400">Preset Strobe</p>
-                                <p class="font-bold text-amber-300 group-hover:text-white">Emergency Strobe</p>
-                            </button>
-                            <button onclick="triggerPattern('sos')" class="p-3 glass-card rounded-xl border hover:border-red-500/50 text-left transition-all group">
-                                <p class="text-xs text-slate-400">Preset Strobe</p>
-                                <p class="font-bold text-red-400 group-hover:text-white">S.O.S Pattern</p>
-                            </button>
-                            <button onclick="triggerPattern('police')" class="p-3 glass-card rounded-xl border hover:border-blue-500/50 text-left transition-all group">
-                                <p class="text-xs text-slate-400">Preset Strobe</p>
-                                <p class="font-bold text-blue-400 group-hover:text-white">Police Red/Blue</p>
-                            </button>
-                            <button onclick="stopStrobe()" class="p-3 glass-card rounded-xl border hover:border-slate-500 text-left transition-all group">
-                                <p class="text-xs text-slate-400">Action</p>
-                                <p class="font-bold text-slate-300 group-hover:text-white">Kill Lights</p>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Speaker Quick Controls -->
-                    <div class="glass-panel p-5 rounded-2xl space-y-4">
-                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <h3 class="font-display font-semibold text-white flex items-center gap-2">
-                                <i class="fa-solid fa-bullhorn text-indigo-400"></i> Speaker Sound Generator
-                            </h3>
-                            <button onclick="switchTab('audio')" class="text-xs text-cyan-400 hover:underline">Full Synthesizer &rarr;</button>
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-3">
-                            <button onclick="playPresetTone('beep')" class="p-3 glass-card rounded-xl text-center hover:border-indigo-500/50 transition-all">
-                                <i class="fa-solid fa-bell text-indigo-400 mb-1 text-lg"></i>
-                                <p class="text-xs font-semibold">Ping Beep</p>
-                            </button>
-                            <button onclick="playPresetTone('siren')" class="p-3 glass-card rounded-xl text-center hover:border-rose-500/50 transition-all">
-                                <i class="fa-solid fa-triangle-exclamation text-rose-400 mb-1 text-lg"></i>
-                                <p class="text-xs font-semibold">Siren Wave</p>
-                            </button>
-                            <button onclick="playPresetTone('alarm')" class="p-3 glass-card rounded-xl text-center hover:border-amber-500/50 transition-all">
-                                <i class="fa-solid fa-circle-exclamation text-amber-400 mb-1 text-lg"></i>
-                                <p class="text-xs font-semibold">Alarm Duty</p>
-                            </button>
-                        </div>
-
-                        <button onclick="stopAudio()" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300 transition-all border border-slate-700">
-                            MUTE ALL AUDIO OUTPUT
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION: LIGHTING -->
-            <div id="section-lighting" class="tab-content hidden space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Controls Sidebar -->
-                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
-                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-                            <span>Strobe Settings</span>
-                            <i class="fa-solid fa-sliders text-amber-400"></i>
-                        </h3>
-
-                        <!-- Frequency / Blink Rate Slider -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <label class="text-slate-300 font-medium">Blink Frequency</label>
-                                <span id="freqLabel" class="font-mono text-amber-400 font-bold">10 Hz</span>
-                            </div>
-                            <input type="range" id="strobeFreq" min="1" max="30" value="10" class="w-full accent-amber-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateStrobeParams()">
-                            <div class="flex justify-between text-[10px] text-slate-500 font-mono">
-                                <span>1 Hz (Slow)</span>
-                                <span>30 Hz (Hyper)</span>
-                            </div>
-                        </div>
-
-                        <!-- Color Selection -->
-                        <div class="space-y-2">
-                            <label class="text-slate-300 text-sm font-medium">Primary Strobe Color</label>
-                            <div class="flex items-center gap-3">
-                                <input type="color" id="strobeColor" value="#f59e0b" class="w-12 h-10 bg-slate-800 rounded border border-slate-700 cursor-pointer p-1" onchange="updateStrobeParams()">
-                                <div class="flex gap-2">
-                                    <button onclick="setColor('#ef4444')" class="w-8 h-8 rounded-full bg-red-500 border border-white/20"></button>
-                                    <button onclick="setColor('#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 border border-white/20"></button>
-                                    <button onclick="setColor('#22c55e')" class="w-8 h-8 rounded-full bg-green-500 border border-white/20"></button>
-                                    <button onclick="setColor('#f59e0b')" class="w-8 h-8 rounded-full bg-amber-500 border border-white/20"></button>
-                                    <button onclick="setColor('#ffffff')" class="w-8 h-8 rounded-full bg-white border border-white/20"></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pattern Selection -->
-                        <div class="space-y-2">
-                            <label class="text-slate-300 text-sm font-medium">Preset Strobe Patterns</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="triggerPattern('beacon')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Standard Blink</button>
-                                <button onclick="triggerPattern('sos')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">SOS Emergency</button>
-                                <button onclick="triggerPattern('police')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Police Strobe</button>
-                                <button onclick="triggerPattern('pulse')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg text-left border">Soft Glow Pulse</button>
-                            </div>
-                        </div>
-
-                        <!-- Power Toggle -->
-                        <div class="pt-4 border-t border-slate-800 flex gap-3">
-                            <button id="strobeToggleBtn" onclick="toggleStrobe()" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold font-display transition-all shadow-lg shadow-amber-500/20">
-                                START LIGHT
-                            </button>
-                            <button onclick="stopStrobe()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">
-                                OFF
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Visual Hardware Light Simulator -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between items-center relative overflow-hidden min-h-[350px]">
-                        <div class="w-full flex justify-between items-center text-xs font-mono text-slate-400">
-                            <span>HARDWARE OPTICAL LIGHT BAY</span>
-                            <span id="lightPatternLabel">PATTERN: CUSTOM</span>
-                        </div>
-
-                        <!-- Animated Light Lamp Fixture Visual -->
-                        <div class="relative my-8 flex items-center justify-center">
-                            <div id="ambientLightGlow" class="absolute w-64 h-64 rounded-full blur-3xl opacity-20 transition-all duration-75" style="background-color: #f59e0b;"></div>
-                            
-                            <div id="strobeBulb" class="strobe-preview relative w-40 h-40 rounded-full border-4 border-slate-700 flex items-center justify-center bg-slate-900 shadow-2xl z-10">
-                                <div class="w-24 h-24 rounded-full border-2 border-white/20 flex items-center justify-center bg-slate-800">
-                                    <i class="fa-solid fa-lightbulb text-5xl text-slate-600 transition-colors" id="bulbIcon"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="w-full glass-card p-4 rounded-xl flex items-center justify-between text-xs font-mono">
-                            <div class="flex items-center gap-2">
-                                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                                <span class="text-slate-300">STABILITY STATUS: NOMINAL</span>
-                            </div>
-                            <span class="text-slate-400" id="dutyCycleLabel">DUTY CYCLE: 50%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION: AUDIO -->
-            <div id="section-audio" class="tab-content hidden space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Synthesizer Controls -->
-                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
-                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-                            <span>Sound Generator</span>
-                            <i class="fa-solid fa-wave-square text-indigo-400"></i>
-                        </h3>
-
-                        <!-- Frequency Slider -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <label class="text-slate-300 font-medium">Frequency Pitch</label>
-                                <span id="audioFreqLabel" class="font-mono text-indigo-400 font-bold">440 Hz</span>
-                            </div>
-                            <input type="range" id="audioFreq" min="100" max="3000" value="440" class="w-full accent-indigo-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateAudioParams()">
-                        </div>
-
-                        <!-- Waveform Type -->
-                        <div class="space-y-2">
-                            <label class="text-slate-300 text-sm font-medium">Waveform Oscillator</label>
-                            <select id="waveType" onchange="updateAudioParams()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="sine">Sine Wave (Smooth)</option>
-                                <option value="square">Square Wave (Retro Digital)</option>
-                                <option value="sawtooth">Sawtooth Wave (Aggressive)</option>
-                                <option value="triangle">Triangle Wave (Mellow)</option>
-                            </select>
-                        </div>
-
-                        <!-- Volume Control -->
-                        <div class="space-y-2">
-                            <div class="flex justify-between text-sm">
-                                <label class="text-slate-300 font-medium">Output Volume</label>
-                                <span id="volumeLabel" class="font-mono text-indigo-400 font-bold">70%</span>
-                            </div>
-                            <input type="range" id="audioVolume" min="0" max="100" value="70" class="w-full accent-indigo-400 bg-slate-800 rounded-lg h-2 cursor-pointer" oninput="updateAudioParams()">
-                        </div>
-
-                        <!-- Sound Presets -->
-                        <div class="space-y-2">
-                            <label class="text-slate-300 text-sm font-medium">Sound Effects / Siren Presets</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="playPresetTone('beep')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Ping Tone</button>
-                                <button onclick="playPresetTone('siren')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Police Siren</button>
-                                <button onclick="playPresetTone('alarm')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Warning Alarm</button>
-                                <button onclick="playPresetTone('ambient')" class="p-2.5 glass-card text-xs text-slate-300 hover:text-white rounded-lg text-left border">Ambient Hum</button>
-                            </div>
-                        </div>
-
-                        <!-- Trigger Button -->
-                        <div class="pt-4 border-t border-slate-800 flex gap-3">
-                            <button id="audioToggleBtn" onclick="toggleAudioTone()" class="flex-1 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold font-display transition-all shadow-lg shadow-indigo-500/20">
-                                PLAY TONE
-                            </button>
-                            <button onclick="stopAudio()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">
-                                STOP
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Audio Visualizer Display -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[350px]">
-                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-4">
-                            <span>WEB AUDIO REAL-TIME OSCILLOSCOPE</span>
-                            <span id="audioStatusBadge" class="text-indigo-400">STATUS: IDLE</span>
-                        </div>
-
-                        <!-- Audio Visualizer Canvas -->
-                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                            <canvas id="audioCanvas" class="w-full h-full absolute inset-0"></canvas>
-                        </div>
-
-                        <div class="mt-4 grid grid-cols-3 gap-4 text-center text-xs font-mono">
-                            <div class="glass-card p-3 rounded-xl">
-                                <p class="text-slate-400">ACTIVE FREQ</p>
-                                <p id="vizFreq" class="text-indigo-400 font-bold text-sm">0 Hz</p>
-                            </div>
-                            <div class="glass-card p-3 rounded-xl">
-                                <p class="text-slate-400">AMPLITUDE</p>
-                                <p id="vizAmp" class="text-indigo-400 font-bold text-sm">0 dB</p>
-                            </div>
-                            <div class="glass-card p-3 rounded-xl">
-                                <p class="text-slate-400">WAVEFORM</p>
-                                <p id="vizWave" class="text-indigo-400 font-bold text-sm">SINE</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECTION: TRACKING -->
-            <div id="section-tracking" class="tab-content hidden space-y-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Map Controls & Coordinates -->
-                    <div class="glass-panel p-6 rounded-2xl space-y-6 lg:col-span-1">
-                        <h3 class="font-display font-semibold text-white border-b border-slate-800 pb-3 flex items-center justify-between">
-                            <span>Position & Telemetry</span>
-                            <i class="fa-solid fa-location-crosshairs text-cyan-400"></i>
-                        </h3>
-
-                        <!-- Telemetry Display Cards -->
-                        <div class="grid grid-cols-2 gap-3 font-mono text-xs">
-                            <div class="glass-card p-3 rounded-xl">
-                                <span class="text-slate-400">Abs X Pos</span>
-                                <p id="trackX" class="text-cyan-400 font-bold text-base">250.0 m</p>
-                            </div>
-                            <div class="glass-card p-3 rounded-xl">
-                                <span class="text-slate-400">Abs Y Pos</span>
-                                <p id="trackY" class="text-cyan-400 font-bold text-base">200.0 m</p>
-                            </div>
-                            <div class="glass-card p-3 rounded-xl">
-                                <span class="text-slate-400">Heading Angle</span>
-                                <p id="trackHeading" class="text-amber-400 font-bold text-base">045°</p>
-                            </div>
-                            <div class="glass-card p-3 rounded-xl">
-                                <span class="text-slate-400">Speed</span>
-                                <p id="trackSpeed" class="text-emerald-400 font-bold text-base">1.4 m/s</p>
-                            </div>
-                        </div>
-
-                        <!-- Manual Coordinate Overrides -->
-                        <div class="space-y-3 pt-2">
-                            <label class="text-slate-300 text-sm font-medium">Target Location Override</label>
-                            <div class="grid grid-cols-2 gap-3">
-                                <input type="number" id="inputX" value="250" class="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono" placeholder="X Coord">
-                                <input type="number" id="inputY" value="200" class="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono" placeholder="Y Coord">
-                            </div>
-                            <button onclick="setCoordinatesFromInput()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl text-xs font-mono transition-all">
-                                UPDATE TARGET COORDS
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Radar Map Visualizer -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[400px]">
-                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-2">
-                            <span>2D RADAR POSITIONING GRID</span>
-                            <span class="text-cyan-400">CLICK CANVAS TO MOVE TARGET</span>
-                        </div>
-
-                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-                            <canvas id="radarCanvas" class="w-full h-full absolute inset-0 cursor-crosshair"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <!-- JavaScript Controller Logic -->
+    <!-- Message Input Bar -->
+    <footer class="p-4 bg-slate-900 border-t border-slate-800">
+        <form id="chatForm" onsubmit="sendMessage(event)" class="flex items-center gap-2 max-w-4xl mx-auto">
+            <input type="text" id="userInput" placeholder="Type a message..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" required>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </form>
+    </footer>
+
+    <!-- JavaScript Chat Logic -->
     <script>
-        // --- Core Application State ---
-        const state = {
-            connected: true,
-            tab: 'overview',
-            strobe: {
-                active: false,
-                freq: 10,
-                color: '#f59e0b',
-                pattern: 'custom',
-                intervalId: null
-            },
-            audio: {
-                ctx: null,
-                osc: null,
-                gain: null,
-                analyser: null,
-                active: false,
-                freq: 440,
-                vol: 0.7,
-                type: 'sine',
-                animationFrame: null
-            },
-            tracking: {
-                x: 250,
-                y: 200,
-                heading: 45,
-                speed: 1.4
-            }
+        let chatHistory = [];
+
+        // Load saved API Key & System Prompt on page load
+        window.onload = () => {
+            const savedKey = localStorage.getItem('companion_api_key');
+            const savedPrompt = localStorage.getItem('companion_prompt');
+            if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
+            if (savedPrompt) document.getElementById('systemPromptInput').value = savedPrompt;
         };
 
-        // --- Tab Switching ---
-        function switchTab(tabId) {
-            state.tab = tabId;
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
-                btn.classList.add('text-slate-400');
-            });
-
-            const activeContent = document.getElementById(`section-${tabId}`);
-            if (activeContent) activeContent.classList.remove('hidden');
-
-            const activeBtn = document.getElementById(`tab-${tabId}`);
-            if (activeBtn) {
-                activeBtn.classList.remove('text-slate-400');
-                activeBtn.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
-            }
-
-            const titleMap = {
-                overview: 'SYSTEM OVERVIEW',
-                lighting: 'STROBE LIGHTING CONTROL',
-                audio: 'AUDIO SYNTHESIZER ENGINE',
-                tracking: 'ABSOLUTE RADAR TRACKING'
-            };
-            document.getElementById('pageTitle').textContent = titleMap[tabId] || 'DASHBOARD';
-
-            if (tabId === 'audio') resizeAudioCanvas();
-            if (tabId === 'tracking') resizeRadarCanvas();
+        function toggleSettings() {
+            const drawer = document.getElementById('settingsDrawer');
+            drawer.classList.toggle('hidden');
         }
 
-        // --- Connection Handler ---
-        function toggleConnection() {
-            state.connected = !state.connected;
-            const btn = document.getElementById('toggleConnBtn');
-            const statusText = document.getElementById('connStatusText');
-            const dot = document.getElementById('statusDot');
-
-            if (state.connected) {
-                btn.className = "px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all";
-                btn.textContent = "ONLINE";
-                statusText.textContent = "Connected (12ms)";
-                dot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-            } else {
-                btn.className = "px-2 py-1 text-xs rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-all";
-                btn.textContent = "OFFLINE";
-                statusText.textContent = "Disconnected";
-                dot.className = "w-3 h-3 rounded-full bg-rose-500";
-            }
+        function saveSettings() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const prompt = document.getElementById('systemPromptInput').value.trim();
+            localStorage.setItem('companion_api_key', apiKey);
+            localStorage.setItem('companion_prompt', prompt);
+            alert('Settings saved!');
+            toggleSettings();
         }
 
-        // --- Strobe Light Controllers ---
-        function updateStrobeParams() {
-            state.strobe.freq = parseInt(document.getElementById('strobeFreq').value);
-            state.strobe.color = document.getElementById('strobeColor').value;
-            document.getElementById('freqLabel').textContent = `${state.strobe.freq} Hz`;
+        async function sendMessage(event) {
+            event.preventDefault();
+            const inputField = document.getElementById('userInput');
+            const userMessage = inputField.value.trim();
+            if (!userMessage) return;
 
-            if (state.strobe.active) {
-                startStrobeLoop();
-            }
-        }
-
-        function setColor(hex) {
-            document.getElementById('strobeColor').value = hex;
-            updateStrobeParams();
-        }
-
-        function toggleStrobe() {
-            if (state.strobe.active) {
-                stopStrobe();
-            } else {
-                startStrobe();
-            }
-        }
-
-        function startStrobe() {
-            state.strobe.active = true;
-            document.getElementById('strobeToggleBtn').textContent = "PAUSE LIGHT";
-            document.getElementById('strobeToggleBtn').className = "flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold font-display transition-all shadow-lg shadow-rose-500/20";
-            document.getElementById('dashStrobeStatus').textContent = "FLASHING";
-            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-amber-400";
-            startStrobeLoop();
-        }
-
-        function stopStrobe() {
-            state.strobe.active = false;
-            clearInterval(state.strobe.intervalId);
-            document.getElementById('strobeToggleBtn').textContent = "START LIGHT";
-            document.getElementById('strobeToggleBtn').className = "flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold font-display transition-all shadow-lg shadow-amber-500/20";
-            document.getElementById('dashStrobeStatus').textContent = "IDLE";
-            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-emerald-400";
-
-            // Reset bulb graphics
-            const bulb = document.getElementById('strobeBulb');
-            const glow = document.getElementById('ambientLightGlow');
-            const icon = document.getElementById('bulbIcon');
-            bulb.style.backgroundColor = '#0f172a';
-            glow.style.opacity = '0';
-            icon.style.color = '#475569';
-        }
-
-        function startStrobeLoop() {
-            clearInterval(state.strobe.intervalId);
-            let stateOn = false;
-            const interval = 1000 / (state.strobe.freq * 2);
-
-            state.strobe.intervalId = setInterval(() => {
-                stateOn = !stateOn;
-                const bulb = document.getElementById('strobeBulb');
-                const glow = document.getElementById('ambientLightGlow');
-                const icon = document.getElementById('bulbIcon');
-
-                if (stateOn) {
-                    bulb.style.backgroundColor = state.strobe.color;
-                    glow.style.backgroundColor = state.strobe.color;
-                    glow.style.opacity = '0.6';
-                    icon.style.color = '#ffffff';
-                } else {
-                    bulb.style.backgroundColor = '#0f172a';
-                    glow.style.opacity = '0.05';
-                    icon.style.color = '#475569';
-                }
-            }, interval);
-        }
-
-        function triggerPattern(pattern) {
-            state.strobe.pattern = pattern;
-            document.getElementById('lightPatternLabel').textContent = `PATTERN: ${pattern.toUpperCase()}`;
-            if (pattern === 'beacon') {
-                setColor('#f59e0b');
-                document.getElementById('strobeFreq').value = 4;
-            } else if (pattern === 'sos') {
-                setColor('#ef4444');
-                document.getElementById('strobeFreq').value = 8;
-            } else if (pattern === 'police') {
-                setColor('#3b82f6');
-                document.getElementById('strobeFreq').value = 14;
-            } else if (pattern === 'pulse') {
-                setColor('#22c55e');
-                document.getElementById('strobeFreq').value = 2;
-            }
-            updateStrobeParams();
-            startStrobe();
-        }
-
-        // --- Audio Synthesizer & Visualizer ---
-        function initAudioContext() {
-            if (!state.audio.ctx) {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                state.audio.ctx = new AudioCtx();
-                state.audio.analyser = state.audio.ctx.createAnalyser();
-                state.audio.analyser.fftSize = 2048;
-            }
-            if (state.audio.ctx.state === 'suspended') {
-                state.audio.ctx.resume();
-            }
-        }
-
-        function updateAudioParams() {
-            state.audio.freq = parseInt(document.getElementById('audioFreq').value);
-            state.audio.vol = parseInt(document.getElementById('audioVolume').value) / 100;
-            state.audio.type = document.getElementById('waveType').value;
-
-            document.getElementById('audioFreqLabel').textContent = `${state.audio.freq} Hz`;
-            document.getElementById('volumeLabel').textContent = `${Math.round(state.audio.vol * 100)}%`;
-
-            if (state.audio.osc) {
-                state.audio.osc.frequency.setValueAtTime(state.audio.freq, state.audio.ctx.currentTime);
-                state.audio.osc.type = state.audio.type;
-            }
-            if (state.audio.gain) {
-                state.audio.gain.gain.setValueAtTime(state.audio.vol, state.audio.ctx.currentTime);
-            }
-
-            document.getElementById('vizFreq').textContent = `${state.audio.freq} Hz`;
-            document.getElementById('vizWave').textContent = state.audio.type.toUpperCase();
-        }
-
-        function toggleAudioTone() {
-            if (state.audio.active) {
-                stopAudio();
-            } else {
-                startAudioTone();
-            }
-        }
-
-        function startAudioTone() {
-            initAudioContext();
-            stopAudioNode();
-
-            state.audio.osc = state.audio.ctx.createOscillator();
-            state.audio.gain = state.audio.ctx.createGain();
-
-            updateAudioParams();
-
-            state.audio.osc.connect(state.audio.gain);
-            state.audio.gain.connect(state.audio.analyser);
-            state.audio.analyser.connect(state.audio.ctx.destination);
-
-            state.audio.osc.start();
-            state.audio.active = true;
-
-            document.getElementById('audioToggleBtn').textContent = "STOP TONE";
-            document.getElementById('audioToggleBtn').className = "flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold font-display transition-all shadow-lg shadow-rose-500/20";
-            document.getElementById('audioStatusBadge').textContent = "STATUS: ACTIVE";
-            document.getElementById('dashAudioStatus').textContent = "PLAYING";
-            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-indigo-400";
-            document.getElementById('vizAmp').textContent = `${Math.round(state.audio.vol * 100)} %`;
-
-            drawOscilloscope();
-        }
-
-        function stopAudioNode() {
-            if (state.audio.osc) {
-                try { state.audio.osc.stop(); } catch(e){}
-                state.audio.osc.disconnect();
-                state.audio.osc = null;
-            }
-        }
-
-        function stopAudio() {
-            stopAudioNode();
-            state.audio.active = false;
-            document.getElementById('audioToggleBtn').textContent = "PLAY TONE";
-            document.getElementById('audioToggleBtn').className = "flex-1 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold font-display transition-all shadow-lg shadow-indigo-500/20";
-            document.getElementById('audioStatusBadge').textContent = "STATUS: IDLE";
-            document.getElementById('dashAudioStatus').textContent = "OFF";
-            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-slate-400";
-            document.getElementById('vizAmp').textContent = "0 dB";
-            document.getElementById('vizFreq').textContent = "0 Hz";
-        }
-
-        function playPresetTone(preset) {
-            initAudioContext();
-            if (preset === 'beep') {
-                document.getElementById('audioFreq').value = 880;
-                document.getElementById('waveType').value = 'sine';
-            } else if (preset === 'siren') {
-                document.getElementById('audioFreq').value = 600;
-                document.getElementById('waveType').value = 'sawtooth';
-            } else if (preset === 'alarm') {
-                document.getElementById('audioFreq').value = 1200;
-                document.getElementById('waveType').value = 'square';
-            } else if (preset === 'ambient') {
-                document.getElementById('audioFreq').value = 150;
-                document.getElementById('waveType').value = 'triangle';
-            }
-            startAudioTone();
-        }
-
-        // Scope Canvas Drawing
-        const canvas = document.getElementById('audioCanvas');
-        const canvasCtx = canvas.getContext('2d');
-
-        function resizeAudioCanvas() {
-            if (!canvas.parentElement) return;
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-        }
-
-        function drawOscilloscope() {
-            if (!state.audio.active) {
-                canvasCtx.fillStyle = '#020617';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-                canvasCtx.strokeStyle = '#1e293b';
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, canvas.height / 2);
-                canvasCtx.lineTo(canvas.width, canvas.height / 2);
-                canvasCtx.stroke();
+            const apiKey = localStorage.getItem('companion_api_key') || document.getElementById('apiKeyInput').value.trim();
+            if (!apiKey) {
+                alert('Please enter an OpenAI API key in the settings gear icon to start chatting!');
+                toggleSettings();
                 return;
             }
 
-            state.audio.animationFrame = requestAnimationFrame(drawOscilloscope);
-            const bufferLength = state.audio.analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            state.audio.analyser.getByteTimeDomainData(dataArray);
+            // Append User Message to UI
+            appendMessage('user', userMessage);
+            inputField.value = '';
 
-            canvasCtx.fillStyle = '#020617';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            // Add user message to memory
+            chatHistory.push({ role: 'user', content: userMessage });
 
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#6366f1';
-            canvasCtx.beginPath();
+            // Create loading placeholder
+            const loadingId = appendLoadingMessage();
 
-            const sliceWidth = canvas.width * 1.0 / bufferLength;
-            let x = 0;
+            try {
+                const systemPrompt = localStorage.getItem('companion_prompt') || document.getElementById('systemPromptInput').value;
+                
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            ...chatHistory
+                        ]
+                    })
+                });
 
-            for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * canvas.height / 2;
+                const data = await response.json();
+                removeLoadingMessage(loadingId);
 
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
+                if (data.error) {
+                    appendMessage('ai', `Error: ${data.error.message}`);
                 } else {
-                    canvasCtx.lineTo(x, y);
+                    const aiReply = data.choices[0].message.content;
+                    appendMessage('ai', aiReply);
+                    chatHistory.push({ role: 'assistant', content: aiReply });
                 }
-                x += sliceWidth;
+            } catch (err) {
+                removeLoadingMessage(loadingId);
+                appendMessage('ai', 'Error connecting to the AI service. Please check your network or API key.');
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const chatWindow = document.getElementById('chatWindow');
+            const wrapper = document.createElement('div');
+            wrapper.className = sender === 'user' ? 'flex justify-end' : 'flex gap-3 max-w-xl';
+
+            if (sender === 'user') {
+                wrapper.innerHTML = `
+                    <div class="chat-bubble-user p-3.5 rounded-2xl text-sm max-w-xl">
+                        ${escapeHtml(text)}
+                    </div>
+                `;
+            } else {
+                wrapper.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="chat-bubble-ai p-3.5 rounded-2xl text-sm">
+                        ${escapeHtml(text)}
+                    </div>
+                `;
             }
 
-            canvasCtx.lineTo(canvas.width, canvas.height / 2);
-            canvasCtx.stroke();
+            chatWindow.appendChild(wrapper);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
         }
 
-        // --- Radar Map Canvas ---
-        const radarCanvas = document.getElementById('radarCanvas');
-        const radarCtx = radarCanvas.getContext('2d');
-
-        function resizeRadarCanvas() {
-            if (!radarCanvas.parentElement) return;
-            radarCanvas.width = radarCanvas.parentElement.clientWidth;
-            radarCanvas.height = radarCanvas.parentElement.clientHeight;
+        function appendLoadingMessage() {
+            const id = 'loading-' + Date.now();
+            const chatWindow = document.getElementById('chatWindow');
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = 'flex gap-3 max-w-xl';
+            wrapper.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs shrink-0">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="chat-bubble-ai p-3.5 rounded-2xl text-sm italic text-slate-400">
+                    Nova is thinking...
+                </div>
+            `;
+            chatWindow.appendChild(wrapper);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return id;
         }
 
-        function setCoordinatesFromInput() {
-            state.tracking.x = parseFloat(document.getElementById('inputX').value) || 0;
-            state.tracking.y = parseFloat(document.getElementById('inputY').value) || 0;
-            updateTelemetryUI();
+        function removeLoadingMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
         }
 
-        function updateTelemetryUI() {
-            document.getElementById('dashCoords').textContent = `X: ${state.tracking.x.toFixed(0)}, Y: ${state.tracking.y.toFixed(0)}`;
-            document.getElementById('trackX').textContent = `${state.tracking.x.toFixed(1)} m`;
-            document.getElementById('trackY').textContent = `${state.tracking.y.toFixed(1)} m`;
-            document.getElementById('trackHeading').textContent = `${Math.round(state.tracking.heading).toString().padStart(3, '0')}°`;
-            document.getElementById('dashHeading').textContent = `${Math.round(state.tracking.heading)}° NE`;
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
-
-        let radarAngle = 0;
-        function renderRadar() {
-            if (!radarCanvas.width) resizeRadarCanvas();
-            const w = radarCanvas.width;
-            const h = radarCanvas.height;
-            const cx = w / 2;
-            const cy = h / 2;
-            const radius = Math.min(w, h) * 0.4;
-
-            radarCtx.fillStyle = '#020617';
-            radarCtx.fillRect(0, 0, w, h);
-
-            // Draw radar rings
-            radarCtx.strokeStyle = 'rgba(6, 182, 212, 0.2)';
-            radarCtx.lineWidth = 1;
-            for (let i = 1; i <= 3; i++) {
-                radarCtx.beginPath();
-                radarCtx.arc(cx, cy, (radius / 3) * i, 0, Math.PI * 2);
-                radarCtx.stroke();
-            }
-
-            // Crosshairs
-            radarCtx.beginPath();
-            radarCtx.moveTo(cx - radius, cy);
-            radarCtx.lineTo(cx + radius, cy);
-            radarCtx.moveTo(cx, cy - radius);
-            radarCtx.lineTo(cx, cy + radius);
-            radarCtx.stroke();
-
-            // Sweeping line
-            radarAngle += 0.03;
-            radarCtx.save();
-            radarCtx.translate(cx, cy);
-            radarCtx.beginPath();
-            radarCtx.moveTo(0, 0);
-            radarCtx.arc(0, 0, radius, radarAngle, radarAngle + 0.3);
-            radarCtx.lineTo(0, 0);
-            radarCtx.fillStyle = 'rgba(6, 182, 212, 0.15)';
-            radarCtx.fill();
-            radarCtx.restore();
-
-            // Map user coords onto radar grid (scaling 500m to radius)
-            const mapX = cx + (state.tracking.x - 250) * (radius / 250);
-            const mapY = cy - (state.tracking.y - 200) * (radius / 200);
-
-            // Target Blip
-            radarCtx.fillStyle = '#06b6d4';
-            radarCtx.beginPath();
-            radarCtx.arc(mapX, mapY, 6, 0, Math.PI * 2);
-            radarCtx.fill();
-            radarCtx.strokeStyle = '#ffffff';
-            radarCtx.stroke();
-
-            requestAnimationFrame(renderRadar);
-        }
-
-        radarCanvas.addEventListener('click', (e) => {
-            const rect = radarCanvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-            const w = radarCanvas.width;
-            const h = radarCanvas.height;
-            const radius = Math.min(w, h) * 0.4;
-
-            state.tracking.x = 250 + (clickX - w / 2) * (250 / radius);
-            state.tracking.y = 200 - (clickY - h / 2) * (200 / radius);
-
-            document.getElementById('inputX').value = Math.round(state.tracking.x);
-            document.getElementById('inputY').value = Math.round(state.tracking.y);
-            updateTelemetryUI();
-        });
-
-        // Dynamic Random Hardware Telemetry Stream
-        setInterval(() => {
-            if (!state.connected) return;
-            const temp = (34 + Math.random() * 1.5).toFixed(1);
-            const power = (14.5 + Math.random() * 0.8).toFixed(1);
-            const rssi = -60 - Math.floor(Math.random() * 6);
-
-            document.getElementById('tempVal').textContent = `${temp}°C`;
-            document.getElementById('powerVal').textContent = `${power} W`;
-            document.getElementById('rssiVal').textContent = `${rssi} dBm`;
-
-            state.tracking.heading = (state.tracking.heading + (Math.random() * 2 - 1)) % 360;
-            if (state.tracking.heading < 0) state.tracking.heading += 360;
-            updateTelemetryUI();
-        }, 2000);
-
-        // Window Lifecycle Initializations
-        window.addEventListener('resize', () => {
-            resizeAudioCanvas();
-            resizeRadarCanvas();
-        });
-
-        window.addEventListener('load', () => {
-            resizeAudioCanvas();
-            resizeRadarCanvas();
-            renderRadar();
-            drawOscilloscope();
-        });
     </script>
 </body>
 </html>
