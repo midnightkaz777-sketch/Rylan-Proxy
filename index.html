@@ -99,6 +99,7 @@
 </head>
 <body class="h-screen flex flex-col md:flex-row overflow-hidden bg-grid">
 
+    <!-- Sidebar Navigation -->
     <aside class="w-full md:w-64 glass-panel flex flex-col justify-between z-20 shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
         <div>
             <!-- Header Logo -->
@@ -159,6 +160,7 @@
         </div>
     </aside>
 
+    <!-- Main Dynamic Content Region -->
     <main class="flex-1 flex flex-col h-full overflow-y-auto">
         <!-- Top Status Bar -->
         <header class="glass-panel px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 z-10 sticky top-0">
@@ -192,7 +194,7 @@
         <!-- Dynamic Content Sections -->
         <div class="p-6 space-y-6 flex-1">
 
-            <!-- SECTION: OVERVIEW / DASHBOARD COMBINED -->
+            <!-- SECTION: OVERVIEW -->
             <div id="section-overview" class="tab-content space-y-6">
                 <!-- Top Quick Stats -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -299,6 +301,7 @@
                 </div>
             </div>
 
+            <!-- SECTION: LIGHTING -->
             <div id="section-lighting" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Controls Sidebar -->
@@ -367,10 +370,8 @@
 
                         <!-- Animated Light Lamp Fixture Visual -->
                         <div class="relative my-8 flex items-center justify-center">
-                            <!-- Outer Ambient Glow Ring -->
                             <div id="ambientLightGlow" class="absolute w-64 h-64 rounded-full blur-3xl opacity-20 transition-all duration-75" style="background-color: #f59e0b;"></div>
                             
-                            <!-- Strobe Lamp Bulb Fixture -->
                             <div id="strobeBulb" class="strobe-preview relative w-40 h-40 rounded-full border-4 border-slate-700 flex items-center justify-center bg-slate-900 shadow-2xl z-10">
                                 <div class="w-24 h-24 rounded-full border-2 border-white/20 flex items-center justify-center bg-slate-800">
                                     <i class="fa-solid fa-lightbulb text-5xl text-slate-600 transition-colors" id="bulbIcon"></i>
@@ -389,6 +390,7 @@
                 </div>
             </div>
 
+            <!-- SECTION: AUDIO -->
             <div id="section-audio" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Synthesizer Controls -->
@@ -479,6 +481,7 @@
                 </div>
             </div>
 
+            <!-- SECTION: TRACKING -->
             <div id="section-tracking" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Map Controls & Coordinates -->
@@ -510,112 +513,69 @@
 
                         <!-- Manual Coordinate Overrides -->
                         <div class="space-y-3 pt-2">
-                            <label class="text-slate-300 text-sm font-medium">Manual Coordinate Dispatch</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <input type="number" id="manualX" placeholder="Target X" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs font-mono text-white">
-                                <input type="number" id="manualY" placeholder="Target Y" class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs font-mono text-white">
+                            <label class="text-slate-300 text-sm font-medium">Target Location Override</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="number" id="inputX" value="250" class="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono" placeholder="X Coord">
+                                <input type="number" id="inputY" value="200" class="bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono" placeholder="Y Coord">
                             </div>
-                            <button onclick="setManualPosition()" class="w-full py-2.5 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 text-xs font-bold transition-all">
-                                SET ABSOLUTE POSITION
+                            <button onclick="setCoordinatesFromInput()" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 font-bold rounded-xl text-xs font-mono transition-all">
+                                UPDATE TARGET COORDS
                             </button>
                         </div>
-
-                        <!-- Tracking Modes Toggles -->
-                        <div class="space-y-3 pt-2 border-t border-slate-800">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-slate-300">Live Simulation Walk</span>
-                                <input type="checkbox" id="simWalkToggle" checked onchange="toggleSimulatedWalk()" class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-slate-300">Show Trail History</span>
-                                <input type="checkbox" id="showTrailToggle" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-slate-300">Display Grid Markers</span>
-                                <input type="checkbox" id="showGridToggle" checked class="w-4 h-4 accent-cyan-400 rounded cursor-pointer">
-                            </div>
-                        </div>
-
-                        <button onclick="clearWaypoints()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-mono transition-all">
-                            CLEAR WAYPOINTS & TRAIL
-                        </button>
                     </div>
 
-                    <!-- 2D Interactive Tracking Map Canvas -->
-                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[450px]">
-                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-3">
-                            <span>ABSOLUTE 2D COORDINATE MAP (CLICK TO SET WAYPOINT)</span>
-                            <span class="text-cyan-400"><i class="fa-solid fa-satellite animate-pulse"></i> GPS FIX: HIGH</span>
+                    <!-- Radar Map Visualizer -->
+                    <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between relative min-h-[400px]">
+                        <div class="flex justify-between items-center text-xs font-mono text-slate-400 mb-2">
+                            <span>2D RADAR POSITIONING GRID</span>
+                            <span class="text-cyan-400">CLICK CANVAS TO MOVE TARGET</span>
                         </div>
 
-                        <!-- Canvas Map Container -->
-                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
-                            <canvas id="mapCanvas" class="w-full h-full cursor-crosshair"></canvas>
-
-                            <!-- Compass Overlay -->
-                            <div class="absolute top-4 right-4 w-14 h-14 rounded-full glass-card border border-slate-700/60 flex items-center justify-center">
-                                <div id="compassNeedle" class="text-rose-500 font-bold transition-transform duration-300">
-                                    <i class="fa-solid fa-location-arrow text-xl"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Coordinates Footer -->
-                        <div class="mt-3 flex justify-between items-center text-xs font-mono text-slate-400">
-                            <span>MAP BOUNDS: 500m x 400m</span>
-                            <span id="mouseCoords">CURSOR: X: 0, Y: 0</span>
+                        <div class="relative flex-1 w-full bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+                            <canvas id="radarCanvas" class="w-full h-full absolute inset-0 cursor-crosshair"></canvas>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="glass-panel p-4 rounded-2xl space-y-2">
-                <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                    <span class="font-mono text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-terminal text-cyan-400"></i> SYSTEM ACTIVITY LOG
-                    </span>
-                    <button onclick="clearLogs()" class="text-[10px] text-slate-500 hover:text-slate-300">Clear Log</button>
-                </div>
-                <div id="consoleLog" class="h-28 overflow-y-auto font-mono text-xs space-y-1 text-slate-300 pr-2">
-                    <div class="text-slate-500">[00:00:00] Hardware System Core Initialized.</div>
                 </div>
             </div>
 
         </div>
     </main>
 
+    <!-- JavaScript Controller Logic -->
     <script>
-        let state = {
+        // --- Core Application State ---
+        const state = {
             connected: true,
+            tab: 'overview',
             strobe: {
                 active: false,
                 freq: 10,
                 color: '#f59e0b',
                 pattern: 'custom',
-                timer: null
+                intervalId: null
             },
             audio: {
-                active: false,
                 ctx: null,
                 osc: null,
                 gain: null,
+                analyser: null,
+                active: false,
                 freq: 440,
-                wave: 'sine',
                 vol: 0.7,
-                analyser: null
+                type: 'sine',
+                animationFrame: null
             },
             tracking: {
                 x: 250,
                 y: 200,
                 heading: 45,
-                speed: 1.4,
-                trail: [],
-                waypoints: [],
-                simWalk: true
+                speed: 1.4
             }
         };
 
+        // --- Tab Switching ---
         function switchTab(tabId) {
+            state.tab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
@@ -625,70 +585,53 @@
             const activeContent = document.getElementById(`section-${tabId}`);
             if (activeContent) activeContent.classList.remove('hidden');
 
-            const activeTab = document.getElementById(`tab-${tabId}`);
-            if (activeTab) {
-                activeTab.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
-                activeTab.classList.remove('text-slate-400');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-cyan-400', 'bg-cyan-500/10', 'border', 'border-cyan-500/20');
             }
 
-            const pageTitle = document.getElementById('pageTitle');
-            if (pageTitle) {
-                pageTitle.innerText = tabId === 'overview' ? 'SYSTEM OVERVIEW' : 
-                                      tabId === 'lighting' ? 'LIGHTING & STROBE CONTROL' : 
-                                      tabId === 'audio' ? 'SPEAKER AUDIO SYNTHESIZER' : 'ABSOLUTE TRACKING MAP';
-            }
+            const titleMap = {
+                overview: 'SYSTEM OVERVIEW',
+                lighting: 'STROBE LIGHTING CONTROL',
+                audio: 'AUDIO SYNTHESIZER ENGINE',
+                tracking: 'ABSOLUTE RADAR TRACKING'
+            };
+            document.getElementById('pageTitle').textContent = titleMap[tabId] || 'DASHBOARD';
+
+            if (tabId === 'audio') resizeAudioCanvas();
+            if (tabId === 'tracking') resizeRadarCanvas();
         }
 
-        function logMessage(msg, type = 'info') {
-            const consoleLog = document.getElementById('consoleLog');
-            const time = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            
-            let color = 'text-slate-300';
-            if (type === 'warn') color = 'text-amber-400';
-            if (type === 'error') color = 'text-rose-400';
-            if (type === 'success') color = 'text-emerald-400';
-
-            logEntry.className = color;
-            logEntry.innerHTML = `<span class="text-slate-500">[${time}]</span> ${msg}`;
-            consoleLog.appendChild(logEntry);
-            consoleLog.scrollTop = consoleLog.scrollHeight;
-        }
-
-        function clearLogs() {
-            document.getElementById('consoleLog').innerHTML = '';
-        }
-
+        // --- Connection Handler ---
         function toggleConnection() {
             state.connected = !state.connected;
             const btn = document.getElementById('toggleConnBtn');
             const statusText = document.getElementById('connStatusText');
-            const statusDot = document.getElementById('statusDot');
+            const dot = document.getElementById('statusDot');
 
             if (state.connected) {
                 btn.className = "px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all";
-                btn.innerText = "ONLINE";
-                statusText.innerText = "Connected (12ms)";
-                statusDot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-                logMessage("Reconnected to hardware node via WebSocket/BLE.", "success");
+                btn.textContent = "ONLINE";
+                statusText.textContent = "Connected (12ms)";
+                dot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
             } else {
                 btn.className = "px-2 py-1 text-xs rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-all";
-                btn.innerText = "OFFLINE";
-                statusText.innerText = "Disconnected";
-                statusDot.className = "w-3 h-3 rounded-full bg-rose-500";
-                logMessage("Hardware connection lost / Disconnected manually.", "error");
+                btn.textContent = "OFFLINE";
+                statusText.textContent = "Disconnected";
+                dot.className = "w-3 h-3 rounded-full bg-rose-500";
             }
         }
 
-        let strobeStateOn = false;
-
+        // --- Strobe Light Controllers ---
         function updateStrobeParams() {
             state.strobe.freq = parseInt(document.getElementById('strobeFreq').value);
             state.strobe.color = document.getElementById('strobeColor').value;
-            document.getElementById('freqLabel').innerText = state.strobe.freq + ' Hz';
-            
-            // Update glow color preview immediately
-            document.getElementById('ambientLightGlow').style.backgroundColor = state.strobe.color;
+            document.getElementById('freqLabel').textContent = `${state.strobe.freq} Hz`;
+
+            if (state.strobe.active) {
+                startStrobeLoop();
+            }
         }
 
         function setColor(hex) {
@@ -705,106 +648,106 @@
         }
 
         function startStrobe() {
-            stopStrobe(); // Clear existing timers
             state.strobe.active = true;
-            document.getElementById('strobeToggleBtn').innerText = "STOP LIGHT";
-            document.getElementById('dashStrobeStatus').innerText = "ACTIVE (" + state.strobe.freq + "Hz)";
-            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-amber-400 animate-pulse";
-            
-            logMessage(`Strobe light started at ${state.strobe.freq} Hz`, "warn");
-
-            const intervalMs = 1000 / (state.strobe.freq * 2);
-            state.strobe.timer = setInterval(() => {
-                strobeStateOn = !strobeStateOn;
-                const bulb = document.getElementById('strobeBulb');
-                const icon = document.getElementById('bulbIcon');
-                const glow = document.getElementById('ambientLightGlow');
-
-                if (strobeStateOn) {
-                    bulb.style.backgroundColor = state.strobe.color;
-                    bulb.style.boxShadow = `0 0 30px ${state.strobe.color}`;
-                    icon.style.color = '#ffffff';
-                    glow.style.opacity = '0.8';
-                } else {
-                    bulb.style.backgroundColor = '#0f172a';
-                    bulb.style.boxShadow = 'none';
-                    icon.style.color = '#475569';
-                    glow.style.opacity = '0.05';
-                }
-            }, intervalMs);
+            document.getElementById('strobeToggleBtn').textContent = "PAUSE LIGHT";
+            document.getElementById('strobeToggleBtn').className = "flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold font-display transition-all shadow-lg shadow-rose-500/20";
+            document.getElementById('dashStrobeStatus').textContent = "FLASHING";
+            document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-amber-400";
+            startStrobeLoop();
         }
 
         function stopStrobe() {
             state.strobe.active = false;
-            if (state.strobe.timer) clearInterval(state.strobe.timer);
-            
-            const bulb = document.getElementById('strobeBulb');
-            const icon = document.getElementById('bulbIcon');
-            const glow = document.getElementById('ambientLightGlow');
-
-            if (bulb) {
-                bulb.style.backgroundColor = '#0f172a';
-                bulb.style.boxShadow = 'none';
-                icon.style.color = '#475569';
-                glow.style.opacity = '0.05';
-            }
-
-            document.getElementById('strobeToggleBtn').innerText = "START LIGHT";
-            document.getElementById('dashStrobeStatus').innerText = "IDLE";
+            clearInterval(state.strobe.intervalId);
+            document.getElementById('strobeToggleBtn').textContent = "START LIGHT";
+            document.getElementById('strobeToggleBtn').className = "flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold font-display transition-all shadow-lg shadow-amber-500/20";
+            document.getElementById('dashStrobeStatus').textContent = "IDLE";
             document.getElementById('dashStrobeStatus').className = "text-lg font-bold font-display text-emerald-400";
-            logMessage("Strobe light deactivated.", "info");
+
+            // Reset bulb graphics
+            const bulb = document.getElementById('strobeBulb');
+            const glow = document.getElementById('ambientLightGlow');
+            const icon = document.getElementById('bulbIcon');
+            bulb.style.backgroundColor = '#0f172a';
+            glow.style.opacity = '0';
+            icon.style.color = '#475569';
+        }
+
+        function startStrobeLoop() {
+            clearInterval(state.strobe.intervalId);
+            let stateOn = false;
+            const interval = 1000 / (state.strobe.freq * 2);
+
+            state.strobe.intervalId = setInterval(() => {
+                stateOn = !stateOn;
+                const bulb = document.getElementById('strobeBulb');
+                const glow = document.getElementById('ambientLightGlow');
+                const icon = document.getElementById('bulbIcon');
+
+                if (stateOn) {
+                    bulb.style.backgroundColor = state.strobe.color;
+                    glow.style.backgroundColor = state.strobe.color;
+                    glow.style.opacity = '0.6';
+                    icon.style.color = '#ffffff';
+                } else {
+                    bulb.style.backgroundColor = '#0f172a';
+                    glow.style.opacity = '0.05';
+                    icon.style.color = '#475569';
+                }
+            }, interval);
         }
 
         function triggerPattern(pattern) {
             state.strobe.pattern = pattern;
-            document.getElementById('lightPatternLabel').innerText = "PATTERN: " + pattern.toUpperCase();
-
-            if (pattern === 'sos') {
+            document.getElementById('lightPatternLabel').textContent = `PATTERN: ${pattern.toUpperCase()}`;
+            if (pattern === 'beacon') {
+                setColor('#f59e0b');
+                document.getElementById('strobeFreq').value = 4;
+            } else if (pattern === 'sos') {
                 setColor('#ef4444');
-                document.getElementById('strobeFreq').value = 5;
+                document.getElementById('strobeFreq').value = 8;
             } else if (pattern === 'police') {
                 setColor('#3b82f6');
                 document.getElementById('strobeFreq').value = 14;
-            } else if (pattern === 'beacon') {
-                setColor('#f59e0b');
-                document.getElementById('strobeFreq').value = 2;
             } else if (pattern === 'pulse') {
                 setColor('#22c55e');
-                document.getElementById('strobeFreq').value = 4;
+                document.getElementById('strobeFreq').value = 2;
             }
-            
             updateStrobeParams();
             startStrobe();
         }
 
+        // --- Audio Synthesizer & Visualizer ---
         function initAudioContext() {
             if (!state.audio.ctx) {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 state.audio.ctx = new AudioCtx();
                 state.audio.analyser = state.audio.ctx.createAnalyser();
-                state.audio.analyser.fftSize = 128;
+                state.audio.analyser.fftSize = 2048;
+            }
+            if (state.audio.ctx.state === 'suspended') {
+                state.audio.ctx.resume();
             }
         }
 
         function updateAudioParams() {
             state.audio.freq = parseInt(document.getElementById('audioFreq').value);
             state.audio.vol = parseInt(document.getElementById('audioVolume').value) / 100;
-            state.audio.wave = document.getElementById('waveType').value;
+            state.audio.type = document.getElementById('waveType').value;
 
-            document.getElementById('audioFreqLabel').innerText = state.audio.freq + ' Hz';
-            document.getElementById('volumeLabel').innerText = Math.round(state.audio.vol * 100) + '%';
+            document.getElementById('audioFreqLabel').textContent = `${state.audio.freq} Hz`;
+            document.getElementById('volumeLabel').textContent = `${Math.round(state.audio.vol * 100)}%`;
 
             if (state.audio.osc) {
                 state.audio.osc.frequency.setValueAtTime(state.audio.freq, state.audio.ctx.currentTime);
-                state.audio.osc.type = state.audio.wave;
+                state.audio.osc.type = state.audio.type;
             }
             if (state.audio.gain) {
                 state.audio.gain.gain.setValueAtTime(state.audio.vol, state.audio.ctx.currentTime);
             }
 
-            document.getElementById('vizFreq').innerText = state.audio.freq + ' Hz';
-            document.getElementById('vizWave').innerText = state.audio.wave.toUpperCase();
-            document.getElementById('vizAmp').innerText = Math.round(state.audio.vol * 100) + ' dB';
+            document.getElementById('vizFreq').textContent = `${state.audio.freq} Hz`;
+            document.getElementById('vizWave').textContent = state.audio.type.toUpperCase();
         }
 
         function toggleAudioTone() {
@@ -817,11 +760,7 @@
 
         function startAudioTone() {
             initAudioContext();
-            if (state.audio.ctx.state === 'suspended') {
-                state.audio.ctx.resume();
-            }
-
-            stopAudio(); // Reset any existing oscillators
+            stopAudioNode();
 
             state.audio.osc = state.audio.ctx.createOscillator();
             state.audio.gain = state.audio.ctx.createGain();
@@ -835,90 +774,87 @@
             state.audio.osc.start();
             state.audio.active = true;
 
-            document.getElementById('audioToggleBtn').innerText = "STOP AUDIO";
-            document.getElementById('audioStatusBadge').innerText = "STATUS: TRANSMITTING";
-            document.getElementById('dashAudioStatus').innerText = "PLAYING";
-            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-indigo-400 animate-pulse";
+            document.getElementById('audioToggleBtn').textContent = "STOP TONE";
+            document.getElementById('audioToggleBtn').className = "flex-1 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold font-display transition-all shadow-lg shadow-rose-500/20";
+            document.getElementById('audioStatusBadge').textContent = "STATUS: ACTIVE";
+            document.getElementById('dashAudioStatus').textContent = "PLAYING";
+            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-indigo-400";
+            document.getElementById('vizAmp').textContent = `${Math.round(state.audio.vol * 100)} %`;
 
-            logMessage(`Audio Tone generator active (${state.audio.freq} Hz - ${state.audio.wave})`, "info");
             drawOscilloscope();
         }
 
-        function stopAudio() {
+        function stopAudioNode() {
             if (state.audio.osc) {
-                try {
-                    state.audio.osc.stop();
-                    state.audio.osc.disconnect();
-                } catch (e) {}
+                try { state.audio.osc.stop(); } catch(e){}
+                state.audio.osc.disconnect();
                 state.audio.osc = null;
             }
-            state.audio.active = false;
-
-            document.getElementById('audioToggleBtn').innerText = "PLAY TONE";
-            document.getElementById('audioStatusBadge').innerText = "STATUS: IDLE";
-            document.getElementById('dashAudioStatus').innerText = "OFF";
-            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-slate-400";
-            
-            document.getElementById('vizFreq').innerText = '0 Hz';
-            document.getElementById('vizAmp').innerText = '0 dB';
         }
 
-        function playPresetTone(type) {
+        function stopAudio() {
+            stopAudioNode();
+            state.audio.active = false;
+            document.getElementById('audioToggleBtn').textContent = "PLAY TONE";
+            document.getElementById('audioToggleBtn').className = "flex-1 py-3 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-bold font-display transition-all shadow-lg shadow-indigo-500/20";
+            document.getElementById('audioStatusBadge').textContent = "STATUS: IDLE";
+            document.getElementById('dashAudioStatus').textContent = "OFF";
+            document.getElementById('dashAudioStatus').className = "text-lg font-bold font-display text-slate-400";
+            document.getElementById('vizAmp').textContent = "0 dB";
+            document.getElementById('vizFreq').textContent = "0 Hz";
+        }
+
+        function playPresetTone(preset) {
             initAudioContext();
-            
-            if (type === 'beep') {
-                document.getElementById('audioFreq').value = 1200;
+            if (preset === 'beep') {
+                document.getElementById('audioFreq').value = 880;
                 document.getElementById('waveType').value = 'sine';
-                startAudioTone();
-                setTimeout(stopAudio, 250);
-            } else if (type === 'siren') {
-                document.getElementById('audioFreq').value = 800;
+            } else if (preset === 'siren') {
+                document.getElementById('audioFreq').value = 600;
                 document.getElementById('waveType').value = 'sawtooth';
-                startAudioTone();
-                let direction = 1;
-                let currentF = 800;
-                let sirenInterval = setInterval(() => {
-                    if (!state.audio.active) { clearInterval(sirenInterval); return; }
-                    currentF += 40 * direction;
-                    if (currentF > 1600 || currentF < 600) direction *= -1;
-                    document.getElementById('audioFreq').value = currentF;
-                    updateAudioParams();
-                }, 50);
-            } else if (type === 'alarm') {
-                document.getElementById('audioFreq').value = 2000;
+            } else if (preset === 'alarm') {
+                document.getElementById('audioFreq').value = 1200;
                 document.getElementById('waveType').value = 'square';
-                startAudioTone();
-            } else if (type === 'ambient') {
+            } else if (preset === 'ambient') {
                 document.getElementById('audioFreq').value = 150;
                 document.getElementById('waveType').value = 'triangle';
-                startAudioTone();
             }
+            startAudioTone();
+        }
+
+        // Scope Canvas Drawing
+        const canvas = document.getElementById('audioCanvas');
+        const canvasCtx = canvas.getContext('2d');
+
+        function resizeAudioCanvas() {
+            if (!canvas.parentElement) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
         }
 
         function drawOscilloscope() {
-            const canvas = document.getElementById('audioCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-
-            if (!state.audio.active || !state.audio.analyser) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!state.audio.active) {
+                canvasCtx.fillStyle = '#020617';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                canvasCtx.strokeStyle = '#1e293b';
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(0, canvas.height / 2);
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
                 return;
             }
 
-            requestAnimationFrame(drawOscilloscope);
-
+            state.audio.animationFrame = requestAnimationFrame(drawOscilloscope);
             const bufferLength = state.audio.analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
             state.audio.analyser.getByteTimeDomainData(dataArray);
 
-            ctx.fillStyle = '#020617';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.fillStyle = '#020617';
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#818cf8';
-            ctx.beginPath();
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#6366f1';
+            canvasCtx.beginPath();
 
             const sliceWidth = canvas.width * 1.0 / bufferLength;
             let x = 0;
@@ -928,225 +864,141 @@
                 const y = v * canvas.height / 2;
 
                 if (i === 0) {
-                    ctx.moveTo(x, y);
+                    canvasCtx.moveTo(x, y);
                 } else {
-                    ctx.lineTo(x, y);
+                    canvasCtx.lineTo(x, y);
                 }
-
                 x += sliceWidth;
             }
 
-            ctx.lineTo(canvas.width, canvas.height / 2);
-            ctx.stroke();
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.stroke();
         }
 
-        function initTrackingMap() {
-            const canvas = document.getElementById('mapCanvas');
-            if (!canvas) return;
+        // --- Radar Map Canvas ---
+        const radarCanvas = document.getElementById('radarCanvas');
+        const radarCtx = radarCanvas.getContext('2d');
 
-            const ctx = canvas.getContext('2d');
+        function resizeRadarCanvas() {
+            if (!radarCanvas.parentElement) return;
+            radarCanvas.width = radarCanvas.parentElement.clientWidth;
+            radarCanvas.height = radarCanvas.parentElement.clientHeight;
+        }
 
-            function resizeCanvas() {
-                canvas.width = canvas.parentElement.clientWidth;
-                canvas.height = canvas.parentElement.clientHeight;
-            }
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+        function setCoordinatesFromInput() {
+            state.tracking.x = parseFloat(document.getElementById('inputX').value) || 0;
+            state.tracking.y = parseFloat(document.getElementById('inputY').value) || 0;
+            updateTelemetryUI();
+        }
 
-            // Handle user click to set target waypoint
-            canvas.addEventListener('click', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
+        function updateTelemetryUI() {
+            document.getElementById('dashCoords').textContent = `X: ${state.tracking.x.toFixed(0)}, Y: ${state.tracking.y.toFixed(0)}`;
+            document.getElementById('trackX').textContent = `${state.tracking.x.toFixed(1)} m`;
+            document.getElementById('trackY').textContent = `${state.tracking.y.toFixed(1)} m`;
+            document.getElementById('trackHeading').textContent = `${Math.round(state.tracking.heading).toString().padStart(3, '0')}°`;
+            document.getElementById('dashHeading').textContent = `${Math.round(state.tracking.heading)}° NE`;
+        }
 
-                // Scale canvas pixel coordinates to meter world coordinate bounds
-                const worldX = Math.round((clickX / canvas.width) * 500);
-                const worldY = Math.round((clickY / canvas.height) * 400);
+        let radarAngle = 0;
+        function renderRadar() {
+            if (!radarCanvas.width) resizeRadarCanvas();
+            const w = radarCanvas.width;
+            const h = radarCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = Math.min(w, h) * 0.4;
 
-                state.tracking.waypoints.push({ x: clickX, y: clickY, worldX, worldY });
-                logMessage(`New Waypoint Target Added at X: ${worldX}m, Y: ${worldY}m`, "success");
-            });
+            radarCtx.fillStyle = '#020617';
+            radarCtx.fillRect(0, 0, w, h);
 
-            // Hover Mouse Coordinates
-            canvas.addEventListener('mousemove', (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = Math.round(((e.clientX - rect.left) / canvas.width) * 500);
-                const mouseY = Math.round(((e.clientY - rect.top) / canvas.height) * 400);
-                document.getElementById('mouseCoords').innerText = `CURSOR: X: ${mouseX}m, Y: ${mouseY}m`;
-            });
-
-            // Main Map Rendering Loop
-            function renderMap() {
-                ctx.fillStyle = '#020617';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                const showGrid = document.getElementById('showGridToggle').checked;
-                const showTrail = document.getElementById('showTrailToggle').checked;
-
-                // Draw Grid Lines
-                if (showGrid) {
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-                    ctx.lineWidth = 1;
-                    const gridSize = 40;
-                    for (let x = 0; x < canvas.width; x += gridSize) {
-                        ctx.beginPath();
-                        ctx.moveTo(x, 0);
-                        ctx.lineTo(x, canvas.height);
-                        ctx.stroke();
-                    }
-                    for (let y = 0; y < canvas.height; y += gridSize) {
-                        ctx.beginPath();
-                        ctx.moveTo(0, y);
-                        ctx.lineTo(canvas.width, y);
-                        ctx.stroke();
-                    }
-                }
-
-                // Draw Waypoints
-                state.tracking.waypoints.forEach((wp, idx) => {
-                    ctx.strokeStyle = '#06b6d4';
-                    ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
-                    ctx.beginPath();
-                    ctx.arc(wp.x, wp.y, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '10px JetBrains Mono';
-                    ctx.fillText(`WP${idx + 1}`, wp.x + 12, wp.y + 4);
-                });
-
-                // Draw Path Trail
-                if (showTrail && state.tracking.trail.length > 1) {
-                    ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    state.tracking.trail.forEach((pt, i) => {
-                        if (i === 0) ctx.moveTo(pt.x, pt.y);
-                        else ctx.lineTo(pt.x, pt.y);
-                    });
-                    ctx.stroke();
-                }
-
-                // Convert World Pos back to Canvas pixels
-                const posX = (state.tracking.x / 500) * canvas.width;
-                const posY = (state.tracking.y / 400) * canvas.height;
-
-                // Draw Hardware Robot Marker Icon
-                ctx.save();
-                ctx.translate(posX, posY);
-                ctx.rotate((state.tracking.heading * Math.PI) / 180);
-
-                // Target Halo Pulsing
-                ctx.strokeStyle = '#22c55e';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(0, 0, 16, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Robot Triangle Marker
-                ctx.fillStyle = '#06b6d4';
-                ctx.beginPath();
-                ctx.moveTo(0, -12);
-                ctx.lineTo(10, 10);
-                ctx.lineTo(-10, 10);
-                ctx.closePath();
-                ctx.fill();
-
-                ctx.restore();
-
-                requestAnimationFrame(renderMap);
+            // Draw radar rings
+            radarCtx.strokeStyle = 'rgba(6, 182, 212, 0.2)';
+            radarCtx.lineWidth = 1;
+            for (let i = 1; i <= 3; i++) {
+                radarCtx.beginPath();
+                radarCtx.arc(cx, cy, (radius / 3) * i, 0, Math.PI * 2);
+                radarCtx.stroke();
             }
 
-            renderMap();
+            // Crosshairs
+            radarCtx.beginPath();
+            radarCtx.moveTo(cx - radius, cy);
+            radarCtx.lineTo(cx + radius, cy);
+            radarCtx.moveTo(cx, cy - radius);
+            radarCtx.lineTo(cx, cy + radius);
+            radarCtx.stroke();
+
+            // Sweeping line
+            radarAngle += 0.03;
+            radarCtx.save();
+            radarCtx.translate(cx, cy);
+            radarCtx.beginPath();
+            radarCtx.moveTo(0, 0);
+            radarCtx.arc(0, 0, radius, radarAngle, radarAngle + 0.3);
+            radarCtx.lineTo(0, 0);
+            radarCtx.fillStyle = 'rgba(6, 182, 212, 0.15)';
+            radarCtx.fill();
+            radarCtx.restore();
+
+            // Map user coords onto radar grid (scaling 500m to radius)
+            const mapX = cx + (state.tracking.x - 250) * (radius / 250);
+            const mapY = cy - (state.tracking.y - 200) * (radius / 200);
+
+            // Target Blip
+            radarCtx.fillStyle = '#06b6d4';
+            radarCtx.beginPath();
+            radarCtx.arc(mapX, mapY, 6, 0, Math.PI * 2);
+            radarCtx.fill();
+            radarCtx.strokeStyle = '#ffffff';
+            radarCtx.stroke();
+
+            requestAnimationFrame(renderRadar);
         }
 
-        function startTelemetrySimulation() {
-            setInterval(() => {
-                if (!state.tracking.simWalk || !state.connected) return;
+        radarCanvas.addEventListener('click', (e) => {
+            const rect = radarCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+            const w = radarCanvas.width;
+            const h = radarCanvas.height;
+            const radius = Math.min(w, h) * 0.4;
 
-                // Move towards waypoint if exists, else wander slightly
-                if (state.tracking.waypoints.length > 0) {
-                    const target = state.tracking.waypoints[0];
-                    const canvas = document.getElementById('mapCanvas');
-                    const targetPixelX = target.x;
-                    const targetPixelY = target.y;
+            state.tracking.x = 250 + (clickX - w / 2) * (250 / radius);
+            state.tracking.y = 200 - (clickY - h / 2) * (200 / radius);
 
-                    const currentPixelX = (state.tracking.x / 500) * canvas.width;
-                    const currentPixelY = (state.tracking.y / 400) * canvas.height;
+            document.getElementById('inputX').value = Math.round(state.tracking.x);
+            document.getElementById('inputY').value = Math.round(state.tracking.y);
+            updateTelemetryUI();
+        });
 
-                    const dx = targetPixelX - currentPixelX;
-                    const dy = targetPixelY - currentPixelY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
+        // Dynamic Random Hardware Telemetry Stream
+        setInterval(() => {
+            if (!state.connected) return;
+            const temp = (34 + Math.random() * 1.5).toFixed(1);
+            const power = (14.5 + Math.random() * 0.8).toFixed(1);
+            const rssi = -60 - Math.floor(Math.random() * 6);
 
-                    if (dist < 10) {
-                        state.tracking.waypoints.shift(); // Reached waypoint
-                        logMessage("Arrived at Waypoint Target.", "success");
-                    } else {
-                        const angle = Math.atan2(dy, dx);
-                        state.tracking.heading = Math.round((angle * 180 / Math.PI + 90) % 360);
-                        state.tracking.x += Math.cos(angle) * 1.5;
-                        state.tracking.y += Math.sin(angle) * 1.5;
-                    }
-                } else {
-                    // Random small drift
-                    state.tracking.heading = (state.tracking.heading + (Math.random() * 6 - 3)) % 360;
-                    const rad = ((state.tracking.heading - 90) * Math.PI) / 180;
-                    state.tracking.x = Math.max(10, Math.min(490, state.tracking.x + Math.cos(rad) * 0.8));
-                    state.tracking.y = Math.max(10, Math.min(390, state.tracking.y + Math.sin(rad) * 0.8));
-                }
+            document.getElementById('tempVal').textContent = `${temp}°C`;
+            document.getElementById('powerVal').textContent = `${power} W`;
+            document.getElementById('rssiVal').textContent = `${rssi} dBm`;
 
-                // Add to trail history
-                const canvas = document.getElementById('mapCanvas');
-                if (canvas) {
-                    const px = (state.tracking.x / 500) * canvas.width;
-                    const py = (state.tracking.y / 400) * canvas.height;
-                    state.tracking.trail.push({ x: px, y: py });
-                    if (state.tracking.trail.length > 150) state.tracking.trail.shift();
-                }
+            state.tracking.heading = (state.tracking.heading + (Math.random() * 2 - 1)) % 360;
+            if (state.tracking.heading < 0) state.tracking.heading += 360;
+            updateTelemetryUI();
+        }, 2000);
 
-                // Update UI Telemetry text
-                document.getElementById('trackX').innerText = state.tracking.x.toFixed(1) + ' m';
-                document.getElementById('trackY').innerText = state.tracking.y.toFixed(1) + ' m';
-                document.getElementById('trackHeading').innerText = Math.round(state.tracking.heading) + '°';
-                document.getElementById('dashCoords').innerText = `X: ${Math.round(state.tracking.x)}, Y: ${Math.round(state.tracking.y)}`;
-                document.getElementById('dashHeading').innerText = `${Math.round(state.tracking.heading).toString().padStart(3, '0')}°`;
+        // Window Lifecycle Initializations
+        window.addEventListener('resize', () => {
+            resizeAudioCanvas();
+            resizeRadarCanvas();
+        });
 
-                // Rotate compass overlay
-                const compass = document.getElementById('compassNeedle');
-                if (compass) {
-                    compass.style.transform = `rotate(${state.tracking.heading}deg)`;
-                }
-
-            }, 100);
-        }
-
-        function setManualPosition() {
-            const x = parseFloat(document.getElementById('manualX').value);
-            const y = parseFloat(document.getElementById('manualY').value);
-
-            if (!isNaN(x) && !isNaN(y)) {
-                state.tracking.x = Math.max(0, Math.min(500, x));
-                state.tracking.y = Math.max(0, Math.min(400, y));
-                logMessage(`Manual Absolute Position Override set to X: ${x}, Y: ${y}`, "warn");
-            }
-        }
-
-        function toggleSimulatedWalk() {
-            state.tracking.simWalk = document.getElementById('simWalkToggle').checked;
-        }
-
-        function clearWaypoints() {
-            state.tracking.waypoints = [];
-            state.tracking.trail = [];
-            logMessage("Cleared waypoints and path trail history.", "info");
-        }
-
-        window.onload = function () {
-            initTrackingMap();
-            startTelemetrySimulation();
-            logMessage("Dashboard initialization complete. Live telemetry online.", "success");
-        };
+        window.addEventListener('load', () => {
+            resizeAudioCanvas();
+            resizeRadarCanvas();
+            renderRadar();
+            drawOscilloscope();
+        });
     </script>
 </body>
 </html>
