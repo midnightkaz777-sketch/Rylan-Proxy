@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full bg-neutral-950 text-neutral-100 antialiased selection:bg-red-600 selection:text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamPulse - Next-Gen Streaming Experience</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            500: '#e11d48',
+                            600: '#e50914', // Netflix Red inspired
+                            700: '#be123c',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        glow: {
+                            '0%': { boxShadow: '0 0 5px rgba(229, 9, 20, 0.4), 0 0 20px rgba(229, 9, 20, 0.2)' },
+                            '100%': { boxShadow: '0 0 20px rgba(229, 9, 20, 0.8), 0 0 35px rgba(229, 9, 20, 0.4)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+
+        /* Hide scrollbar for smooth carousel scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Gradient mask for smooth edge fading */
+        .mask-linear-gradient {
+            mask-image: linear-gradient(to right, transparent, black 15px, black calc(100% - 15px), transparent);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            accent-color: #e50914;
+        }
+    </style>
+</head>
+<body class="bg-neutral-950 text-neutral-100 font-sans min-h-screen flex flex-col overflow-x-hidden selection:bg-brand-600 selection:text-white">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header id="navbar" class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 bg-gradient-to-b from-neutral-950/90 via-neutral-950/50 to-transparent backdrop-blur-sm px-4 md:px-12 py-4 flex items-center justify-between">
+        <!-- Brand Logo & Main Nav Items -->
+        <div class="flex items-center space-x-8">
+            <a href="#" class="flex items-center space-x-2 group">
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-brand-600 to-rose-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-600/30 group-hover:scale-105 transition-transform">
+                    <i class="fa-solid fa-play text-sm ml-0.5"></i>
+                </div>
+                <span class="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-white via-neutral-200 to-brand-500 bg-clip-text text-transparent">
+                    STREAMPULSE
+                </span>
+            </a>
+
+            <!-- Desktop Links -->
+            <nav class="hidden lg:flex items-center space-x-6 text-sm font-medium text-neutral-300">
+                <button onclick="filterCategory('all')" class="hover:text-white transition-colors text-white font-semibold flex items-center space-x-1">
+                    <span>Home</span>
+                </button>
+                <button onclick="filterCategory('Action')" class="hover:text-white transition-colors">Action</button>
+                <button onclick="filterCategory('Sci-Fi')" class="hover:text-white transition-colors">Sci-Fi</button>
+                <button onclick="filterCategory('Drama')" class="hover:text-white transition-colors">Drama</button>
+                <button onclick="filterCategory('Comedy')" class="hover:text-white transition-colors">Comedy</button>
+                <button onclick="scrollToRow('watchlist-row')" class="hover:text-white transition-colors flex items-center space-x-1">
+                    <i class="fa-solid fa-bookmark text-xs text-brand-500"></i>
+                    <span>My List</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Search Bar, Notifications, & User Profile Controls -->
+        <div class="flex items-center space-x-4 md:space-x-6">
+            <!-- Dynamic Search Input Container -->
+            <div class="relative flex items-center">
+                <div id="search-box" class="flex items-center bg-neutral-900/80 border border-neutral-700/60 rounded-full px-3 py-1.5 focus-within:border-brand-500 transition-all duration-300 w-36 sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass text-neutral-400 text-sm mr-2"></i>
+                    <input type="text" id="search-input" onkeyup="handleSearch(this.value)" placeholder="Search titles, actors..." class="bg-transparent border-none outline-none text-xs sm:text-sm text-white w-full placeholder-neutral-500 focus:ring-0">
+                    <button id="search-clear-btn" onclick="clearSearch()" class="hidden text-neutral-400 hover:text-white ml-1">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                    </button>
+                </div>
+                
+                <!-- Search Live Dropdown Results -->
+                <div id="search-results-dropdown" class="hidden absolute top-12 right-0 left-0 sm:left-auto sm:w-80 bg-neutral-900/95 backdrop-blur-md border border-neutral-800 rounded-xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+                    <div id="search-results-list" class="divide-y divide-neutral-800/60">
+                        <!-- Search items populated here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Bell & Dropdown -->
+            <div class="relative">
+                <button id="notif-btn" onclick="toggleNotifications()" class="relative p-2 text-neutral-300 hover:text-white rounded-full hover:bg-neutral-800/50 transition-colors">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-600 rounded-full animate-ping"></span>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-600 rounded-full"></span>
+                </button>
+
+                <!-- Notification Box -->
+                <div id="notif-dropdown" class="hidden absolute right-0 mt-3 w-72 sm:w-80 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-4 z-50">
+                    <div class="flex justify-between items-center pb-2 border-b border-neutral-800 mb-3">
+                        <span class="font-bold text-sm">Notifications</span>
+                        <span class="text-xs text-brand-500 font-medium">2 New</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-start space-x-3 text-xs p-2 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 transition-colors cursor-pointer">
+                            <div class="w-2 h-2 rounded-full bg-brand-500 mt-1.5"></div>
+                            <div>
+                                <p class="text-white font-semibold">New Arrival: Cyberpunk 2099</p>
+                                <p class="text-neutral-400 text-[10px] mt-0.5">Now streaming in 4K HDR</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3 text-xs p-2 rounded-lg bg-neutral-800/40 hover:bg-neutral-800 transition-colors cursor-pointer">
+                            <div class="w-2 h-2 rounded-full bg-brand-500 mt-1.5"></div>
+                            <div>
+                                <p class="text-white font-semibold">Season 2 Trailer Dropped</p>
+                                <p class="text-neutral-400 text-[10px] mt-0.5">Watch the official teaser now</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Avatar Selector & Profile Menu -->
+            <div class="relative">
+                <button id="profile-btn" onclick="toggleProfileMenu()" class="flex items-center space-x-2 group">
+                    <img id="current-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Avatar" class="w-8 h-8 md:w-9 md:h-9 rounded-lg object-cover ring-2 ring-brand-600/50 group-hover:ring-brand-500 transition-all">
+                    <i class="fa-solid fa-chevron-down text-xs text-neutral-400 group-hover:text-white transition-transform duration-200"></i>
+                </button>
+
+                <!-- Profile Dropdown Menu -->
+                <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-56 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl p-2 z-50">
+                    <div class="p-3 border-b border-neutral-800 mb-2">
+                        <p id="profile-name" class="font-bold text-sm text-white">Alex Morgan</p>
+                        <p class="text-xs text-neutral-400">Premium Ultra HD</p>
+                    </div>
+                    <div class="px-2 py-1">
+                        <p class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Switch Profile</p>
+                        <div class="grid grid-cols-4 gap-2 mb-3">
+                            <img onclick="switchAvatar('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', 'Alex Morgan')" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" class="w-9 h-9 rounded-md object-cover cursor-pointer hover:scale-105 transition-transform ring-1 ring-neutral-700">
+                            <img onclick="switchAvatar('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', 'Marcus Chen')" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" class="w-9 h-9 rounded-md object-cover cursor-pointer hover:scale-105 transition-transform ring-1 ring-neutral-700">
+                            <img onclick="switchAvatar('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80', 'Sarah Connor')" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" class="w-9 h-9 rounded-md object-cover cursor-pointer hover:scale-105 transition-transform ring-1 ring-neutral-700">
+                            <img onclick="switchAvatar('https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80', 'Kids Mode')" src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=150&q=80" class="w-9 h-9 rounded-md object-cover cursor-pointer hover:scale-105 transition-transform ring-1 ring-neutral-700">
+                        </div>
+                    </div>
+                    <div class="border-t border-neutral-800 pt-1 text-xs">
+                        <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors">
+                            <i class="fa-solid fa-gear mr-2.5 text-neutral-400"></i> Account Settings
+                        </a>
+                        <a href="#" class="flex items-center px-3 py-2 rounded-lg hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors">
+                            <i class="fa-solid fa-circle-question mr-2.5 text-neutral-400"></i> Help Center
+                        </a>
+                        <button onclick="showToast('Logged out successfully')" class="w-full text-left flex items-center px-3 py-2 rounded-lg hover:bg-neutral-800 text-brand-500 hover:text-brand-400 transition-colors">
+                            <i class="fa-solid fa-arrow-right-from-bracket mr-2.5"></i> Sign Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO FEATURED SECTION -->
+    <section class="relative w-full h-[85vh] min-h-[600px] max-h-[900px] flex items-end pb-16 px-4 md:px-12 overflow-hidden">
+        <!-- Hero Background Canvas/Image Dynamic Overlay -->
+        <div class="absolute inset-0 z-0">
+            <div id="hero-backdrop" class="w-full h-full bg-cover bg-center transition-all duration-1000 scale-105" style="background-image: url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=2000&q=80');">
+            </div>
+            <!-- Dynamic Canvas Loop Animation Effect for Dynamic Autoplay feel -->
+            <canvas id="hero-canvas" class="absolute inset-0 opacity-40 mix-blend-overlay pointer-events-none w-full h-full"></canvas>
+            
+            <!-- Vignette & Multi-stage Gradient Overlays -->
+            <div class="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-neutral-950 via-neutral-950/60 to-transparent"></div>
+        </div>
+
+        <!-- Hero Content Info -->
+        <div class="relative z-10 max-w-2xl space-y-4">
+            <!-- Badges -->
+            <div class="flex items-center space-x-3 text-xs font-semibold">
+                <span class="px-2.5 py-1 bg-brand-600 text-white rounded-md uppercase tracking-wider flex items-center space-x-1">
+                    <i class="fa-solid fa-fire text-[10px]"></i>
+                    <span>#1 Featured Today</span>
+                </span>
+                <span class="px-2 py-0.5 border border-neutral-600 text-neutral-300 rounded font-mono">4K ULTRA HD</span>
+                <span class="text-emerald-400 font-bold flex items-center">
+                    <i class="fa-solid fa-star text-xs mr-1 text-amber-400"></i> 98% Match
+                </span>
+            </div>
+
+            <!-- Title -->
+            <h1 id="hero-title" class="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white drop-shadow-lg uppercase leading-none">
+                CYBERPUNK 2099
+            </h1>
+
+            <!-- Genres & Info -->
+            <div id="hero-meta" class="flex items-center space-x-3 text-xs sm:text-sm text-neutral-300">
+                <span>2026</span>
+                <span class="w-1 h-1 rounded-full bg-neutral-500"></span>
+                <span>Sci-Fi / Cyberpunk</span>
+                <span class="w-1 h-1 rounded-full bg-neutral-500"></span>
+                <span>2h 24m</span>
+                <span class="w-1 h-1 rounded-full bg-neutral-500"></span>
+                <span class="border border-neutral-700 px-1.5 py-0.2 rounded text-[11px]">PG-13</span>
+            </div>
+
+            <!-- Description -->
+            <p id="hero-desc" class="text-neutral-300 text-sm sm:text-base line-clamp-3 leading-relaxed drop-shadow">
+                In a sprawling neo-metropolis governed by rogue AI, a lone mercenary uncovers a dark corporate plot that could rewrite human consciousness forever.
+            </p>
+
+            <!-- Interactive Action Buttons -->
+            <div class="flex items-center space-x-4 pt-2">
+                <button onclick="playHeroMovie()" class="flex items-center space-x-2 px-6 sm:px-8 py-3 bg-white text-neutral-950 hover:bg-neutral-200 font-bold rounded-lg transition-all transform active:scale-95 shadow-xl hover:shadow-2xl">
+                    <i class="fa-solid fa-play text-base"></i>
+                    <span>Play Now</span>
+                </button>
+                <button onclick="openHeroDetails()" class="flex items-center space-x-2 px-6 py-3 bg-neutral-800/80 hover:bg-neutral-700/80 text-white font-semibold rounded-lg backdrop-blur-md transition-all border border-neutral-700/50">
+                    <i class="fa-solid fa-circle-info text-base"></i>
+                    <span>More Info</span>
+                </button>
+                <button id="hero-watchlist-btn" onclick="toggleHeroWatchlist()" class="p-3 bg-neutral-800/80 hover:bg-neutral-700/80 text-white rounded-lg backdrop-blur-md transition-all border border-neutral-700/50 group" title="Add to Watchlist">
+                    <i class="fa-solid fa-plus text-base group-hover:scale-110 transition-transform"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mute/Unmute / Trailer Controls -->
+        <div class="absolute right-4 md:right-12 bottom-16 z-10 flex items-center space-x-3">
+            <button onclick="toggleHeroPreviewAudio()" class="p-3 rounded-full bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-700 text-white backdrop-blur-md transition-colors">
+                <i id="hero-audio-icon" class="fa-solid fa-volume-xmark text-sm"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT ROWS WRAPPER -->
+    <main class="relative z-20 -mt-8 space-y-10 pb-20 px-4 md:px-12">
+
+        <!-- CATEGORY QUICK FILTER CHIPS -->
+        <div class="flex items-center space-x-3 overflow-x-auto no-scrollbar py-2 border-b border-neutral-800/60">
+            <span class="text-xs font-semibold text-neutral-500 uppercase tracking-wider mr-2">Quick Genres:</span>
+            <button onclick="filterCategory('all')" class="chip-btn active px-4 py-1.5 rounded-full text-xs font-semibold bg-brand-600 text-white shadow-lg transition-all whitespace-nowrap">All Titles</button>
+            <button onclick="filterCategory('Action')" class="chip-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-all whitespace-nowrap">Action</button>
+            <button onclick="filterCategory('Sci-Fi')" class="chip-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-all whitespace-nowrap">Sci-Fi</button>
+            <button onclick="filterCategory('Drama')" class="chip-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-all whitespace-nowrap">Drama</button>
+            <button onclick="filterCategory('Comedy')" class="chip-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-all whitespace-nowrap">Comedy</button>
+            <button onclick="filterCategory('Horror')" class="chip-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700 transition-all whitespace-nowrap">Horror</button>
+        </div>
+
+        <!-- ROW 1: CONTINUE WATCHING (WITH PROGRESS BARS) -->
+        <section class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-500 text-base"></i>
+                    <span>Continue Watching</span>
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="scrollCarousel('continue-watching-row', -300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button onclick="scrollCarousel('continue-watching-row', 300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="continue-watching-row" class="flex space-x-4 overflow-x-auto no-scrollbar scroll-smooth py-2">
+                <!-- Dynamically Injected Continue Watching Items -->
+            </div>
+        </section>
+
+        <!-- ROW 2: TRENDING NOW -->
+        <section class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-trend-up text-brand-500 text-base"></i>
+                    <span>Trending Now</span>
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="scrollCarousel('trending-row', -300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button onclick="scrollCarousel('trending-row', 300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="trending-row" class="flex space-x-4 overflow-x-auto no-scrollbar scroll-smooth py-2">
+                <!-- Dynamically Injected Trending Movies -->
+            </div>
+        </section>
+
+        <!-- ROW 3: TOP RATED (NUMERICAL RANKING BADGES) -->
+        <section class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-crown text-amber-500 text-base"></i>
+                    <span>Top 10 Rated Titles</span>
+                </h2>
+                <div class="flex space-x-2">
+                    <button onclick="scrollCarousel('top-rated-row', -300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button onclick="scrollCarousel('top-rated-row', 300)" class="p-1.5 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-md border border-neutral-800">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="top-rated-row" class="flex space-x-6 overflow-x-auto no-scrollbar scroll-smooth py-2">
+                <!-- Dynamically Injected Top Rated Cards -->
+            </div>
+        </section>
+
+        <!-- ROW 4: MY LIST / WATCHLIST -->
+        <section id="watchlist-section" class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center space-x-2">
+                    <i class="fa-solid fa-bookmark text-brand-500 text-base"></i>
+                    <span>My Saved Watchlist</span>
+                </h2>
+            </div>
+
+            <div id="watchlist-row" class="flex space-x-4 overflow-x-auto no-scrollbar scroll-smooth py-2 min-h-[220px] items-center">
+                <!-- Dynamically Injected Watchlist Cards -->
+            </div>
+        </section>
+    </main>
+
+    <!-- INTERACTIVE VIDEO PLAYER MODAL -->
+    <div id="video-player-modal" class="fixed inset-0 z-50 hidden bg-black flex items-center justify-center overflow-hidden">
+        <!-- Canvas/Video Backdrop Simulation -->
+        <canvas id="player-canvas" class="w-full h-full object-cover"></canvas>
+
+        <!-- Dynamic Overlay Controls Container -->
+        <div id="player-controls" class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/70 flex flex-col justify-between p-6 opacity-0 hover:opacity-100 transition-opacity duration-300">
+            
+            <!-- Top Controls (Back, Title, Info) -->
+            <div class="flex items-center justify-between">
+                <button onclick="closeVideoPlayer()" class="flex items-center space-x-2 px-3 py-2 bg-neutral-900/80 hover:bg-neutral-800 text-white rounded-lg border border-neutral-700/50 backdrop-blur-md transition-colors">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                    <span class="text-sm font-semibold">Exit Player</span>
+                </button>
+                <div class="text-center">
+                    <p id="player-movie-title" class="font-bold text-lg text-white">Cyberpunk 2099</p>
+                    <p id="player-movie-sub" class="text-xs text-neutral-400">Streaming in 4K HDR • Dolby Atmos</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="toggleFullscreen()" class="p-2.5 bg-neutral-900/80 hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-lg border border-neutral-700/50">
+                        <i class="fa-solid fa-expand text-base"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center Controls (Big Play/Pause, Skip Back/Forward) -->
+            <div class="flex items-center justify-center space-x-8">
+                <button onclick="rewindVideo(10)" class="p-4 rounded-full bg-neutral-900/60 hover:bg-neutral-800 text-white transition-all transform hover:scale-110">
+                    <i class="fa-solid fa-rotate-left text-2xl"></i>
+                </button>
+                <button id="player-play-btn" onclick="togglePlayPause()" class="p-6 rounded-full bg-brand-600 hover:bg-brand-500 text-white transition-all transform hover:scale-110 shadow-2xl shadow-brand-600/50">
+                    <i id="player-play-icon" class="fa-solid fa-pause text-3xl ml-0.5"></i>
+                </button>
+                <button onclick="forwardVideo(10)" class="p-4 rounded-full bg-neutral-900/60 hover:bg-neutral-800 text-white transition-all transform hover:scale-110">
+                    <i class="fa-solid fa-rotate-right text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Bottom Controls (Progress Scrubber, Audio, Quality, Speed) -->
+            <div class="space-y-3 max-w-5xl mx-auto w-full">
+                <!-- Scrubber Bar -->
+                <div class="flex items-center space-x-4">
+                    <span id="player-time-current" class="text-xs font-mono text-neutral-300">00:00</span>
+                    <div class="relative flex-1 group cursor-pointer">
+                        <input type="range" id="player-seek" min="0" max="100" value="0" oninput="seekVideo(this.value)" class="w-full h-1.5 bg-neutral-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <span id="player-time-total" class="text-xs font-mono text-neutral-400">02:24:00</span>
+                </div>
+
+                <!-- Control Buttons Bar -->
+                <div class="flex items-center justify-between text-xs sm:text-sm text-neutral-300">
+                    <div class="flex items-center space-x-4">
+                        <!-- Volume Slider -->
+                        <div class="flex items-center space-x-2 group">
+                            <button onclick="toggleMute()" class="hover:text-white">
+                                <i id="player-vol-icon" class="fa-solid fa-volume-high text-base"></i>
+                            </button>
+                            <input type="range" id="player-vol" min="0" max="1" step="0.1" value="1" oninput="setVolume(this.value)" class="w-20 h-1 bg-neutral-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Quality / Speed / Subtitles Controls -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Audio/Subtitles Selector -->
+                        <select onchange="showToast('Subtitle updated to ' + this.value)" class="bg-neutral-900 border border-neutral-700 text-xs rounded-md px-2 py-1 text-neutral-200 outline-none">
+                            <option value="English [CC]">Subtitles: English [CC]</option>
+                            <option value="Spanish">Subtitles: Spanish</option>
+                            <option value="French">Subtitles: French</option>
+                            <option value="Off">Subtitles: Off</option>
+                        </select>
+
+                        <!-- Quality Selector -->
+                        <select onchange="showToast('Quality set to ' + this.value)" class="bg-neutral-900 border border-neutral-700 text-xs rounded-md px-2 py-1 text-neutral-200 outline-none">
+                            <option value="4K Ultra HD">4K Ultra HD</option>
+                            <option value="1080p Full HD">1080p HD</option>
+                            <option value="720p HD">720p HD</option>
+                            <option value="Auto">Auto (Adaptive)</option>
+                        </select>
+
+                        <!-- Playback Speed -->
+                        <select onchange="setPlaybackSpeed(this.value)" class="bg-neutral-900 border border-neutral-700 text-xs rounded-md px-2 py-1 text-neutral-200 outline-none">
+                            <option value="1">1.0x Normal</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2.0x</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOVIE DETAIL MODAL -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+        <div class="relative w-full max-w-4xl bg-neutral-900 rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 my-8">
+            <!-- Close Modal Button -->
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-neutral-950/70 hover:bg-neutral-800 text-white transition-colors border border-neutral-700/50">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Banner Header -->
+            <div class="relative h-72 sm:h-96 w-full overflow-hidden">
+                <img id="modal-banner" src="" alt="Detail Banner" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/40 to-transparent"></div>
+                
+                <div class="absolute bottom-6 left-6 right-6 space-y-3">
+                    <span id="modal-match" class="px-2.5 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-bold rounded-md">98% Match</span>
+                    <h2 id="modal-title" class="text-3xl sm:text-5xl font-black text-white drop-shadow-md">Movie Title</h2>
+                    
+                    <div class="flex items-center space-x-4">
+                        <button id="modal-play-btn" onclick="" class="flex items-center space-x-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg transition-all shadow-lg shadow-brand-600/40">
+                            <i class="fa-solid fa-play text-sm"></i>
+                            <span>Watch Now</span>
+                        </button>
+                        <button id="modal-watchlist-btn" onclick="" class="flex items-center space-x-2 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-semibold rounded-lg border border-neutral-700 transition-colors">
+                            <i class="fa-solid fa-plus text-sm"></i>
+                            <span>Add to Watchlist</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Details Grid -->
+            <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Left 2 Cols: Synopsis & Ratings -->
+                <div class="md:col-span-2 space-y-6">
+                    <div class="flex items-center space-x-4 text-xs sm:text-sm text-neutral-400 font-medium">
+                        <span id="modal-year">2026</span>
+                        <span id="modal-rating-badge" class="border border-neutral-700 px-1.5 py-0.5 rounded text-white text-xs">PG-13</span>
+                        <span id="modal-duration">2h 15m</span>
+                        <span id="modal-genre" class="text-brand-500">Action, Sci-Fi</span>
+                    </div>
+
+                    <p id="modal-desc" class="text-neutral-300 text-sm sm:text-base leading-relaxed">
+                        Detailed movie synopsis goes here...
+                    </p>
+
+                    <!-- Interactive User Star Rating System -->
+                    <div class="p-4 bg-neutral-950/60 rounded-xl border border-neutral-800/80 space-y-2">
+                        <p class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Rate This Title:</p>
+                        <div class="flex items-center space-x-2" id="star-rating-container">
+                            <button onclick="rateMovie(1)" class="star-btn text-neutral-600 hover:text-amber-400 text-xl transition-colors"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="rateMovie(2)" class="star-btn text-neutral-600 hover:text-amber-400 text-xl transition-colors"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="rateMovie(3)" class="star-btn text-neutral-600 hover:text-amber-400 text-xl transition-colors"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="rateMovie(4)" class="star-btn text-neutral-600 hover:text-amber-400 text-xl transition-colors"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="rateMovie(5)" class="star-btn text-neutral-600 hover:text-amber-400 text-xl transition-colors"><i class="fa-solid fa-star"></i></button>
+                            <span id="user-rating-feedback" class="text-xs text-neutral-400 ml-2">Click to rate</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Col: Cast & Specs -->
+                <div class="space-y-4 text-xs sm:text-sm border-t md:border-t-0 md:border-l border-neutral-800 pt-6 md:pt-0 md:pl-6">
+                    <div>
+                        <span class="text-neutral-500 block mb-1">Cast:</span>
+                        <p id="modal-cast" class="text-neutral-200 font-medium">Keanu Reeves, Ana de Armas, Idris Elba</p>
+                    </div>
+                    <div>
+                        <span class="text-neutral-500 block mb-1">Director:</span>
+                        <p id="modal-director" class="text-neutral-200 font-medium">Denis Villeneuve</p>
+                    </div>
+                    <div>
+                        <span class="text-neutral-500 block mb-1">Audio & Subtitles:</span>
+                        <p class="text-neutral-300">Dolby Atmos 7.1, English [CC], Spanish, French</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- "More Like This" Recommendations -->
+            <div class="p-6 border-t border-neutral-800 space-y-4">
+                <h3 class="font-bold text-base text-white">More Like This</h3>
+                <div id="modal-recommendations" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <!-- Dynamic Recommendation Cards -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // MOVIE CATALOG DATABASE
+        const MOVIES_DATABASE = [
+            {
+                id: 'm1',
+                title: 'Cyberpunk 2099',
+                category: 'Sci-Fi',
+                year: '2026',
+                duration: '2h 24m',
+                rating: 'PG-13',
+                match: '98%',
+                stars: 4.9,
+                progress: 65,
+                desc: 'In a sprawling neo-metropolis governed by rogue AI, a lone mercenary uncovers a dark corporate plot that could rewrite human consciousness forever.',
+                cast: 'Keanu Reeves, Ana de Armas, Idris Elba',
+                director: 'Denis Villeneuve',
+                banner: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80',
+                trending: true,
+                topRated: 1
+            },
+            {
+                id: 'm2',
+                title: 'Shadow Realm',
+                category: 'Action',
+                year: '2025',
+                duration: '1h 58m',
+                rating: 'R',
+                match: '95%',
+                stars: 4.7,
+                progress: 30,
+                desc: 'An elite assassin betrayed by his own guild must navigate a underworld filled with magical creatures and lethal swordmasters.',
+                cast: 'Hiroyuki Sanada, Karen Fukuhara',
+                director: 'Chad Stahelski',
+                banner: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=600&q=80',
+                trending: true,
+                topRated: 2
+            },
+            {
+                id: 'm3',
+                title: 'Interstellar Odyssey',
+                category: 'Sci-Fi',
+                year: '2025',
+                duration: '2h 45m',
+                rating: 'PG-13',
+                match: '99%',
+                stars: 5.0,
+                progress: 90,
+                desc: 'A brave crew ventures through a newly discovered wormhole near Saturn in search of a new home for mankind as Earth expires.',
+                cast: 'Matthew McConaughey, Jessica Chastain',
+                director: 'Christopher Nolan',
+                banner: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=600&q=80',
+                trending: true,
+                topRated: 3
+            },
+            {
+                id: 'm4',
+                title: 'Neon Nights',
+                category: 'Drama',
+                year: '2024',
+                duration: '2h 10m',
+                rating: 'R',
+                match: '91%',
+                stars: 4.5,
+                progress: 15,
+                desc: 'An underground DJ in Tokyo becomes entangled with rival syndicates after discovering an encrypted audio drive containing billionaire secrets.',
+                cast: 'Rinko Kikuchi, Mackenyu',
+                director: 'Wong Kar-wai',
+                banner: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
+                trending: false,
+                topRated: 4
+            },
+            {
+                id: 'm5',
+                title: 'The Crimson Manor',
+                category: 'Horror',
+                year: '2025',
+                duration: '1h 42m',
+                rating: 'R',
+                match: '89%',
+                stars: 4.3,
+                progress: 0,
+                desc: 'An inheritance turns deadly when a family spends the night at a century-old mansion cursed by an ancient spectral order.',
+                cast: 'Anya Taylor-Joy, Bill Skarsgård',
+                director: 'Guillermo del Toro',
+                banner: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80',
+                trending: true,
+                topRated: 5
+            },
+            {
+                id: 'm6',
+                title: 'Laughter Therapy',
+                category: 'Comedy',
+                year: '2026',
+                duration: '1h 35m',
+                rating: 'PG-13',
+                match: '94%',
+                stars: 4.6,
+                progress: 45,
+                desc: 'Two rival stand-up comedians are accidentally booked on a worldwide cruise tour together, causing chaos on the high seas.',
+                cast: 'Kevin Hart, Ryan Reynolds',
+                director: 'Paul Feig',
+                banner: 'https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&w=1200&q=80',
+                poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=600&q=80',
+                trending: false,
+                topRated: 6
+            }
+        ];
+
+        // GLOBAL APP STATE
+        let watchlist = JSON.parse(localStorage.getItem('streamPulse_watchlist')) || ['m1', 'm3'];
+        let activeFilter = 'all';
+        let isHeroAudioMuted = true;
+        let isPlaying = false;
+        let playbackInterval;
+        let currentPlayingMovie = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initHeroCanvas();
+            renderAllRows();
+            setupNavbarScroll();
+            
+            // Close dropdowns on outside click
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#notif-btn') && !e.target.closest('#notif-dropdown')) {
+                    document.getElementById('notif-dropdown').classList.add('hidden');
+                }
+                if (!e.target.closest('#profile-btn') && !e.target.closest('#profile-dropdown')) {
+                    document.getElementById('profile-dropdown').classList.add('hidden');
+                }
+                if (!e.target.closest('#search-box') && !e.target.closest('#search-results-dropdown')) {
+                    document.getElementById('search-results-dropdown').classList.add('hidden');
+                }
+            });
+        });
+
+        // NAVBAR SCROLL EFFECT
+        function setupNavbarScroll() {
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('bg-neutral-950/95', 'shadow-2xl');
+                    navbar.classList.remove('bg-gradient-to-b');
+                } else {
+                    navbar.classList.remove('bg-neutral-950/95', 'shadow-2xl');
+                    navbar.classList.add('bg-gradient-to-b');
+                }
+            });
+        }
+
+        function renderAllRows() {
+            renderContinueWatching();
+            renderTrending();
+            renderTopRated();
+            renderWatchlist();
+        }
+
+        // CREATE MOVIE CARD HTML
+        function createMovieCard(movie, showProgress = false, showRank = false) {
+            const isSaved = watchlist.includes(movie.id);
+
+            return `
+                <div class="flex-none w-44 sm:w-56 group relative cursor-pointer rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800/80 transition-all duration-300 hover:scale-105 hover:z-30 hover:shadow-2xl hover:shadow-brand-600/20 hover:border-neutral-700">
+                    
+                    ${showRank ? `<div class="absolute top-2 left-2 z-20 w-8 h-8 rounded-full bg-brand-600/90 backdrop-blur-md text-white font-black flex items-center justify-center text-sm shadow-lg">${movie.topRated}</div>` : ''}
+                    
+                    <!-- Poster Image -->
+                    <div class="relative aspect-[2/3] w-full overflow-hidden">
+                        <img src="${movie.poster}" alt="${movie.title}" class="w-full h-full object-cover group-hover:opacity-60 transition-opacity duration-300">
+                        
+                        <!-- Hover Quick Action Controls -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 bg-gradient-to-t from-black via-black/40 to-transparent">
+                            <div class="flex items-center justify-between mb-2">
+                                <button onclick="openVideoPlayer('${movie.id}')" class="p-2.5 bg-brand-600 text-white rounded-full hover:bg-brand-500 shadow-lg transform hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-play text-xs ml-0.5"></i>
+                                </button>
+                                <button onclick="toggleWatchlist('${movie.id}')" class="p-2.5 bg-neutral-800/80 hover:bg-neutral-700 text-white rounded-full border border-neutral-600 backdrop-blur-md transition-colors">
+                                    <i class="fa-solid ${isSaved ? 'fa-check text-emerald-400' : 'fa-plus'} text-xs"></i>
+                                </button>
+                                <button onclick="openDetailModal('${movie.id}')" class="p-2.5 bg-neutral-800/80 hover:bg-neutral-700 text-white rounded-full border border-neutral-600 backdrop-blur-md transition-colors">
+                                    <i class="fa-solid fa-circle-info text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar for Continue Watching -->
+                    ${showProgress ? `
+                        <div class="w-full bg-neutral-800 h-1.5">
+                            <div class="bg-brand-600 h-full rounded-r" style="width: ${movie.progress}%"></div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Card Footer Info -->
+                    <div class="p-3">
+                        <h3 class="font-bold text-sm text-white truncate">${movie.title}</h3>
+                        <div class="flex items-center justify-between text-[11px] text-neutral-400 mt-1">
+                            <span>${movie.year}</span>
+                            <span class="text-amber-400 font-semibold"><i class="fa-solid fa-star text-[10px] mr-1"></i>${movie.stars}</span>
+                            <span class="border border-neutral-700 px-1 rounded text-[10px]">${movie.rating}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderContinueWatching() {
+            const container = document.getElementById('continue-watching-row');
+            const items = MOVIES_DATABASE.filter(m => m.progress > 0);
+            container.innerHTML = items.map(m => createMovieCard(m, true)).join('');
+        }
+
+        function renderTrending() {
+            const container = document.getElementById('trending-row');
+            const filtered = activeFilter === 'all' 
+                ? MOVIES_DATABASE.filter(m => m.trending)
+                : MOVIES_DATABASE.filter(m => m.category === activeFilter);
+            container.innerHTML = filtered.map(m => createMovieCard(m)).join('');
+        }
+
+        function renderTopRated() {
+            const container = document.getElementById('top-rated-row');
+            const sorted = [...MOVIES_DATABASE].sort((a,b) => a.topRated - b.topRated);
+            container.innerHTML = sorted.map(m => createMovieCard(m, false, true)).join('');
+        }
+
+        function renderWatchlist() {
+            const container = document.getElementById('watchlist-row');
+            const savedMovies = MOVIES_DATABASE.filter(m => watchlist.includes(m.id));
+
+            if (savedMovies.length === 0) {
+                container.innerHTML = `
+                    <div class="w-full text-center py-10 text-neutral-500">
+                        <i class="fa-solid fa-bookmark text-3xl mb-2 text-neutral-700 block"></i>
+                        Your Watchlist is empty. Click <i class="fa-solid fa-plus text-xs px-1"></i> on any movie card to save it!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = savedMovies.map(m => createMovieCard(m)).join('');
+        }
+
+        function filterCategory(category) {
+            activeFilter = category;
+            
+            // Update Chip Styles
+            document.querySelectorAll('.chip-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white');
+                btn.classList.add('bg-neutral-900', 'text-neutral-300');
+            });
+
+            event.target.classList.remove('bg-neutral-900', 'text-neutral-300');
+            event.target.classList.add('bg-brand-600', 'text-white');
+
+            renderTrending();
+            showToast(`Filtered by ${category.toUpperCase()}`);
+        }
+
+        function scrollCarousel(elementId, distance) {
+            const container = document.getElementById(elementId);
+            container.scrollBy({ left: distance, behavior: 'smooth' });
+        }
+
+        function toggleWatchlist(movieId) {
+            if (watchlist.includes(movieId)) {
+                watchlist = watchlist.filter(id => id !== movieId);
+                showToast('Removed from Watchlist');
+            } else {
+                watchlist.push(movieId);
+                showToast('Added to Watchlist!');
+            }
+            localStorage.setItem('streamPulse_watchlist', JSON.stringify(watchlist));
+            renderAllRows();
+        }
+
+        function toggleHeroWatchlist() {
+            toggleWatchlist('m1');
+            const btn = document.getElementById('hero-watchlist-btn');
+            const isSaved = watchlist.includes('m1');
+            btn.innerHTML = `<i class="fa-solid ${isSaved ? 'fa-check text-emerald-400' : 'fa-plus'} text-base"></i>`;
+        }
+
+        function handleSearch(query) {
+            const dropdown = document.getElementById('search-results-dropdown');
+            const list = document.getElementById('search-results-list');
+            const clearBtn = document.getElementById('search-clear-btn');
+
+            if (!query.trim()) {
+                dropdown.classList.add('hidden');
+                clearBtn.classList.add('hidden');
+                return;
+            }
+
+            clearBtn.classList.remove('hidden');
+            const matches = MOVIES_DATABASE.filter(m => 
+                m.title.toLowerCase().includes(query.toLowerCase()) || 
+                m.category.toLowerCase().includes(query.toLowerCase()) ||
+                m.cast.toLowerCase().includes(query.toLowerCase())
+            );
+
+            if (matches.length === 0) {
+                list.innerHTML = `<div class="p-4 text-xs text-neutral-400 text-center">No movies found</div>`;
+            } else {
+                list.innerHTML = matches.map(m => `
+                    <div onclick="openDetailModal('${m.id}')" class="flex items-center space-x-3 p-3 hover:bg-neutral-800/80 cursor-pointer transition-colors">
+                        <img src="${m.poster}" class="w-10 h-14 object-cover rounded">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-white truncate">${m.title}</p>
+                            <p class="text-[10px] text-neutral-400">${m.year} • ${m.category}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-neutral-500"></i>
+                    </div>
+                `).join('');
+            }
+
+            dropdown.classList.remove('hidden');
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('search-results-dropdown').classList.add('hidden');
+            document.getElementById('search-clear-btn').classList.add('hidden');
+        }
+
+        function initHeroCanvas() {
+            const canvas = document.getElementById('hero-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 1,
+                    speedY: Math.random() * 0.5 + 0.2,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#e50914';
+
+                particles.forEach(p => {
+                    ctx.globalAlpha = p.opacity;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    p.y -= p.speedY;
+                    if (p.y < 0) {
+                        p.y = canvas.height;
+                        p.x = Math.random() * canvas.width;
+                    }
+                });
+
+                requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+        }
+
+        function toggleHeroPreviewAudio() {
+            isHeroAudioMuted = !isHeroAudioMuted;
+            const icon = document.getElementById('hero-audio-icon');
+            icon.className = isHeroAudioMuted ? 'fa-solid fa-volume-xmark text-sm' : 'fa-solid fa-volume-high text-sm';
+            showToast(isHeroAudioMuted ? 'Hero preview muted' : 'Hero preview unmuted');
+        }
+
+        function playHeroMovie() {
+            openVideoPlayer('m1');
+        }
+
+        function openHeroDetails() {
+            openDetailModal('m1');
+        }
+
+        function openVideoPlayer(movieId) {
+            const movie = MOVIES_DATABASE.find(m => m.id === movieId);
+            currentPlayingMovie = movie;
+
+            document.getElementById('player-movie-title').innerText = movie.title;
+            document.getElementById('video-player-modal').classList.remove('hidden');
+
+            // Canvas Animation Player Simulation
+            initPlayerSimulation();
+            togglePlayPause(true);
+            showToast(`Now Streaming: ${movie.title}`);
+        }
+
+        function closeVideoPlayer() {
+            document.getElementById('video-player-modal').classList.add('hidden');
+            clearInterval(playbackInterval);
+            isPlaying = false;
+        }
+
+        function initPlayerSimulation() {
+            const canvas = document.getElementById('player-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let step = 0;
+            function drawFrame() {
+                if (!isPlaying) return;
+                
+                // Draw dynamic visual graphics on canvas to simulate video stream playback
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Animated glowing gradient circles
+                step += 0.02;
+                const x = canvas.width / 2 + Math.cos(step) * 200;
+                const y = canvas.height / 2 + Math.sin(step * 1.5) * 150;
+
+                const grad = ctx.createRadialGradient(x, y, 20, x, y, 400);
+                grad.addColorStop(0, '#e50914');
+                grad.addColorStop(0.5, '#be123c');
+                grad.addColorStop(1, '#050505');
+
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Text Overlay in frame center
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.font = '900 48px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('STREAMPULSE 4K SIMULATION STREAM', canvas.width / 2, canvas.height / 2);
+
+                if (isPlaying) requestAnimationFrame(drawFrame);
+            }
+
+            drawFrame();
+        }
+
+        function togglePlayPause(forcePlay = false) {
+            const playIcon = document.getElementById('player-play-icon');
+            isPlaying = forcePlay ? true : !isPlaying;
+
+            if (isPlaying) {
+                playIcon.className = 'fa-solid fa-pause text-3xl ml-0.5';
+                initPlayerSimulation();
+                startPlaybackTimer();
+            } else {
+                playIcon.className = 'fa-solid fa-play text-3xl ml-1';
+                clearInterval(playbackInterval);
+            }
+        }
+
+        function startPlaybackTimer() {
+            clearInterval(playbackInterval);
+            const seek = document.getElementById('player-seek');
+            const timeCurrent = document.getElementById('player-time-current');
+
+            playbackInterval = setInterval(() => {
+                if (!isPlaying) return;
+                let val = parseFloat(seek.value) + 0.1;
+                if (val > 100) val = 0;
+                seek.value = val;
+
+                // Format time mock
+                const totalSeconds = 144 * 60; // 2h 24m
+                const currentSec = Math.floor((val / 100) * totalSeconds);
+                const hrs = Math.floor(currentSec / 3600);
+                const mins = Math.floor((currentSec % 3600) / 60);
+                const secs = currentSec % 60;
+                timeCurrent.innerText = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function seekVideo(val) {
+            showToast(`Seeked to ${Math.floor(val)}%`);
+        }
+
+        function rewindVideo(seconds) {
+            const seek = document.getElementById('player-seek');
+            seek.value = Math.max(0, parseFloat(seek.value) - 5);
+            showToast(`Rewound ${seconds}s`);
+        }
+
+        function forwardVideo(seconds) {
+            const seek = document.getElementById('player-seek');
+            seek.value = Math.min(100, parseFloat(seek.value) + 5);
+            showToast(`Fast forwarded ${seconds}s`);
+        }
+
+        function setVolume(val) {
+            const icon = document.getElementById('player-vol-icon');
+            if (val == 0) icon.className = 'fa-solid fa-volume-xmark text-base';
+            else if (val < 0.5) icon.className = 'fa-solid fa-volume-low text-base';
+            else icon.className = 'fa-solid fa-volume-high text-base';
+        }
+
+        function toggleMute() {
+            const vol = document.getElementById('player-vol');
+            if (vol.value > 0) {
+                vol.value = 0;
+                setVolume(0);
+            } else {
+                vol.value = 1;
+                setVolume(1);
+            }
+        }
+
+        function setPlaybackSpeed(speed) {
+            showToast(`Playback speed set to ${speed}x`);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function openDetailModal(movieId) {
+            const movie = MOVIES_DATABASE.find(m => m.id === movieId);
+
+            document.getElementById('modal-banner').src = movie.banner;
+            document.getElementById('modal-title').innerText = movie.title;
+            document.getElementById('modal-year').innerText = movie.year;
+            document.getElementById('modal-rating-badge').innerText = movie.rating;
+            document.getElementById('modal-duration').innerText = movie.duration;
+            document.getElementById('modal-genre').innerText = movie.category;
+            document.getElementById('modal-desc').innerText = movie.desc;
+            document.getElementById('modal-cast').innerText = movie.cast;
+            document.getElementById('modal-director').innerText = movie.director;
+            document.getElementById('modal-match').innerText = `${movie.match} Match`;
+
+            // Setup Buttons
+            const playBtn = document.getElementById('modal-play-btn');
+            playBtn.onclick = () => { closeDetailModal(); openVideoPlayer(movie.id); };
+
+            const watchlistBtn = document.getElementById('modal-watchlist-btn');
+            const isSaved = watchlist.includes(movie.id);
+            watchlistBtn.innerHTML = `<i class="fa-solid ${isSaved ? 'fa-check text-emerald-400' : 'fa-plus'} text-sm"></i><span>${isSaved ? 'In Watchlist' : 'Add to Watchlist'}</span>`;
+            watchlistBtn.onclick = () => { toggleWatchlist(movie.id); openDetailModal(movie.id); };
+
+            // Render Recommendations
+            const recsContainer = document.getElementById('modal-recommendations');
+            const similar = MOVIES_DATABASE.filter(m => m.id !== movie.id).slice(0, 4);
+            recsContainer.innerHTML = similar.map(m => `
+                <div onclick="openDetailModal('${m.id}')" class="group cursor-pointer rounded-lg overflow-hidden bg-neutral-950 border border-neutral-800 hover:border-neutral-700 transition-all">
+                    <img src="${m.poster}" class="w-full h-32 object-cover">
+                    <div class="p-2">
+                        <p class="text-xs font-bold text-white truncate">${m.title}</p>
+                        <p class="text-[10px] text-neutral-400">${m.year} • ${m.category}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        function rateMovie(stars) {
+            const container = document.getElementById('star-rating-container');
+            const btns = container.querySelectorAll('.star-btn');
+            const feedback = document.getElementById('user-rating-feedback');
+
+            btns.forEach((btn, index) => {
+                if (index < stars) {
+                    btn.classList.add('text-amber-400');
+                    btn.classList.remove('text-neutral-600');
+                } else {
+                    btn.classList.remove('text-amber-400');
+                    btn.classList.add('text-neutral-600');
+                }
+            });
+
+            feedback.innerText = `You rated this ${stars}/5 Stars!`;
+            showToast(`Thank you for rating ${stars} stars!`);
+        }
+
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notif-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function toggleProfileMenu() {
+            const dropdown = document.getElementById('profile-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function switchAvatar(url, name) {
+            document.getElementById('current-avatar').src = url;
+            document.getElementById('profile-name').innerText = name;
+            toggleProfileMenu();
+            showToast(`Switched profile to ${name}`);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-white text-xs font-semibold rounded-lg shadow-2xl flex items-center space-x-2 animate-bounce';
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-brand-500"></i><span>${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
